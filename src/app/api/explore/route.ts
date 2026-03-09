@@ -1,56 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+const EXPLORE_API_URL = 'https://api.rore.supply/api/explore';
+const ERROR_RESPONSE = { error: 'Failed to fetch explore data' };
+
+export async function GET(request: Request) {
+  const upstreamUrl = new URL(EXPLORE_API_URL);
+  upstreamUrl.search = new URL(request.url).search;
+
   try {
-    const protocolRes = await fetch('https://api.rore.supply/api/motherlode', {
+    const res = await fetch(upstreamUrl, {
+      cache: 'no-store',
       headers: {
-        'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
     });
 
-    const roundsRes = await fetch('https://api.rore.supply/api/rounds/current', {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!protocolRes.ok) {
-      throw new Error(`Protocol fetch failed: ${protocolRes.status}`);
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    if (!roundsRes.ok) {
-      throw new Error(`Rounds fetch failed: ${roundsRes.status}`);
-    }
-
-    const protocolData = await protocolRes.json();
-    const roundsData = await roundsRes.json();
-
-    // Add CORS headers
-    const response = NextResponse.json({
-      protocolStats: protocolData,
-      currentRound: roundsData,
-      lastUpdated: Date.now()
-    });
-    
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-    
-    return response;
+    const data = await res.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in /api/explore:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch data from rORE API' }, 
-      { status: 500 }
-    );
+    console.error('Error fetching explore data:', error);
+    return NextResponse.json(ERROR_RESPONSE, { status: 500 });
   }
-}
-
-// Handle preflight requests
-export function OPTIONS() {
-  const response = NextResponse.json({});
-  response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  return response;
 }

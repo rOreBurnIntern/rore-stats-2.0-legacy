@@ -8,5 +8,10 @@
     "outDir": ".test-dist",
     "types": ["node"]
   },
-  "include": ["src/app/api/prices/route.ts", "src/app/api/prices/route.test.ts"]
+  "include": [
+    "src/app/api/prices/route.ts",
+    "src/app/api/prices/route.test.ts",
+    "src/app/api/explore/route.ts",
+    "src/app/api/explore/route.test.ts"
+  ]
 }
