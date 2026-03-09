@@ -9,6 +9,7 @@
     "types": ["node"]
   },
   "include": [
+    "eslint.config.test.ts",
     "src/app/api/prices/route.ts",
     "src/app/api/prices/route.test.ts",
     "src/app/api/explore/route.ts",
