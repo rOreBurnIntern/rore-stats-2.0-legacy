@@ -5,8 +5,8 @@ export async function GET(request: NextRequest) {
     // Fetch all required data in parallel
     const [pricesRes, motherlodeRes, roundsRes] = await Promise.all([
       fetch('https://api.rore.supply/api/prices'),
-      fetch('https://api.rore.supply/api/motherlode'),
-      fetch('https://api.rore.supply/api/rounds/current')
+      fetch('https://api.rore.supply/api/motherlode').catch(() => ({ ok: false, status: 500, json: async () => ({ error: 'Service temporarily unavailable' }) })),
+      fetch('https://api.rore.supply/api/rounds/current').catch(() => ({ ok: false, status: 500, json: async () => ({ error: 'Service temporarily unavailable' }) }))
     ]);
 
     if (!pricesRes.ok) throw new Error(`Prices fetch failed: ${pricesRes.status}`);
