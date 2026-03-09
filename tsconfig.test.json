@@ -10,10 +10,15 @@
   },
   "include": [
     "eslint.config.test.ts",
+    "next.config.test.ts",
+    "package.test.ts",
+    "src/app/api/stats/route.ts",
+    "src/app/api/stats/route.test.ts",
     "src/app/api/prices/route.ts",
     "src/app/api/prices/route.test.ts",
     "src/app/api/explore/route.ts",
     "src/app/api/explore/route.test.ts",
+    "src/app/lib/stats.ts",
     "src/app/page.tsx",
     "src/app/page.test.tsx"
   ]

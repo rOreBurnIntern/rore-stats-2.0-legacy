@@ -5,45 +5,60 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import Home from './page';
 
 const originalFetch = global.fetch;
-const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+const originalDateNow = Date.now;
 
 test.afterEach(() => {
   global.fetch = originalFetch;
-
-  if (originalAppUrl === undefined) {
-    delete process.env.NEXT_PUBLIC_APP_URL;
-    return;
-  }
-
-  process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
+  Date.now = originalDateNow;
 });
 
-test('renders stats from the aggregated API endpoint', async () => {
+test('renders stats from the upstream data sources during prerender', async () => {
   const lastUpdated = Date.parse('2026-03-09T12:34:56.000Z');
   const endTime = Date.now() + 10 * 60 * 1000;
-  let requestedUrl = '';
+  const requestedUrls: string[] = [];
+  Date.now = () => lastUpdated;
 
-  process.env.NEXT_PUBLIC_APP_URL = 'https://rore-stats.example';
   global.fetch = async (input) => {
-    requestedUrl = input.toString();
+    requestedUrls.push(input.toString());
 
-    return new Response(
-      JSON.stringify({
-        wethPrice: 3210.45,
-        rorePrice: 0.654321,
-        motherlode: {
+    if (input.toString() === 'https://api.rore.supply/api/prices') {
+      return new Response(
+        JSON.stringify({
+          weth: 3210.45,
+          ore: 0.688758947368421,
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    if (input.toString() === 'https://api.rore.supply/api/motherlode') {
+      return new Response(
+        JSON.stringify({
           totalValue: 98765,
           totalORELocked: 43210,
           participants: 246,
-        },
-        currentRound: {
-          number: 12,
-          status: 'active',
-          prize: 777,
-          entries: 88,
-          endTime,
-        },
-        lastUpdated,
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        round: 12,
+        status: 'active',
+        prize: 777,
+        entries: 88,
+        endTime,
       }),
       {
         headers: {
@@ -56,7 +71,11 @@ test('renders stats from the aggregated API endpoint', async () => {
 
   const markup = renderToStaticMarkup(await Home());
 
-  assert.equal(requestedUrl, 'https://rore-stats.example/api/stats');
+  assert.deepEqual(requestedUrls, [
+    'https://api.rore.supply/api/prices',
+    'https://api.rore.supply/api/motherlode',
+    'https://api.rore.supply/api/rounds/current',
+  ]);
   assert.match(markup, /rORE Stats Dashboard/);
   assert.match(markup, /\$3210\.45/);
   assert.match(markup, /\$0\.654321/);

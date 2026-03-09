@@ -1,0 +1,78 @@
+export interface StatsData {
+  wethPrice: number;
+  rorePrice: number;
+  motherlode: {
+    totalValue: number;
+    totalORELocked: number;
+    participants: number;
+  };
+  currentRound: {
+    number: number;
+    status: string;
+    prize: number;
+    entries: number;
+    endTime: number;
+  };
+  lastUpdated: number;
+}
+
+const PRICES_API_URL = 'https://api.rore.supply/api/prices';
+const MOTHERLODE_API_URL = 'https://api.rore.supply/api/motherlode';
+const ROUNDS_API_URL = 'https://api.rore.supply/api/rounds/current';
+const REQUEST_INIT: RequestInit & { next: { revalidate: number } } = {
+  headers: {
+    Accept: 'application/json',
+  },
+  next: { revalidate: 30 },
+};
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, REQUEST_INIT);
+
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getStatsData(): Promise<StatsData | null> {
+  try {
+    const [pricesData, motherlodeData, roundsData] = await Promise.all([
+      fetchJson<{ weth: number; ore: number }>(PRICES_API_URL),
+      fetchJson<{
+        totalValue: number;
+        totalORELocked: number;
+        participants: number;
+      }>(MOTHERLODE_API_URL),
+      fetchJson<{
+        round: number;
+        status: string;
+        prize: number;
+        entries: number;
+        endTime: number;
+      }>(ROUNDS_API_URL),
+    ]);
+
+    return {
+      wethPrice: pricesData.weth,
+      rorePrice: pricesData.ore * 0.95,
+      motherlode: {
+        totalValue: motherlodeData.totalValue,
+        totalORELocked: motherlodeData.totalORELocked,
+        participants: motherlodeData.participants,
+      },
+      currentRound: {
+        number: roundsData.round,
+        status: roundsData.status,
+        prize: roundsData.prize,
+        entries: roundsData.entries,
+        endTime: roundsData.endTime,
+      },
+      lastUpdated: Date.now(),
+    };
+  } catch (error) {
+    console.error('Error fetching aggregated stats:', error);
+    return null;
+  }
+}

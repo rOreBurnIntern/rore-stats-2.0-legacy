@@ -2,25 +2,8 @@ import DashboardHeader from './components/DashboardHeader';
 import MotherlodeCard from './components/MotherlodeCard';
 import RoundCard from './components/RoundCard';
 import StatCard from './components/StatCard';
-import { fetchFromAPI } from './lib/fetcher';
-
-interface StatsData {
-  wethPrice: number;
-  rorePrice: number;
-  motherlode: {
-    totalValue: number;
-    totalORELocked: number;
-    participants: number;
-  };
-  currentRound: {
-    number: number;
-    status: string;
-    prize: number;
-    entries: number;
-    endTime: number;
-  };
-  lastUpdated: number;
-}
+import { waitForRequest } from './lib/request';
+import { getStatsData } from './lib/stats';
 
 function getTimeRemaining(endTime: number, referenceTime: number) {
   return endTime > referenceTime
@@ -29,7 +12,8 @@ function getTimeRemaining(endTime: number, referenceTime: number) {
 }
 
 export default async function Home() {
-  const statsData: StatsData | null = await fetchFromAPI<StatsData>('/stats');
+  await waitForRequest();
+  const statsData = await getStatsData();
 
   const lastUpdate = statsData?.lastUpdated ? new Date(statsData.lastUpdated).toLocaleTimeString() : 'N/A';
 
