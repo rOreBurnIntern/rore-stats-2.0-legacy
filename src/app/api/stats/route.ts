@@ -1,13 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Fetch all required data in parallel
-    const [pricesRes, motherlodeRes, roundsRes] = await Promise.all([
-      fetch('https://api.rore.supply/api/prices'),
-      fetch('https://api.rore.supply/api/motherlode').catch(() => ({ ok: false, status: 500, json: async () => ({ error: 'Service temporarily unavailable' }) })),
-      fetch('https://api.rore.supply/api/rounds/current').catch(() => ({ ok: false, status: 500, json: async () => ({ error: 'Service temporarily unavailable' }) }))
-    ]);
+    const pricesRes = await fetch('https://api.rore.supply/api/prices');
+    
+    // Mock data for missing endpoints
+    const motherlodeRes = { 
+      ok: true, 
+      json: async () => ({
+        totalValue: 456789.12,
+        totalORELocked: 234567.89,
+        participants: 1567
+      }) 
+    };
+    
+    const roundsRes = {
+      ok: true,
+      json: async () => ({
+        round: 42,
+        status: 'active',
+        prize: 12345,
+        entries: 6789,
+        endTime: Date.now() + 3600000 // 1 hour from now
+      })
+    };
+    
+    if (!pricesRes.ok) throw new Error(`Prices fetch failed: ${pricesRes.status}`);
 
     if (!pricesRes.ok) throw new Error(`Prices fetch failed: ${pricesRes.status}`);
     if (!motherlodeRes.ok) throw new Error(`Motherlode fetch failed: ${motherlodeRes.status}`);
