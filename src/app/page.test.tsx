@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import Loading from './loading';
 import Home from './page';
 import InteractiveBarChart from './components/InteractiveBarChart';
+import ProtocolStatCards from './components/ProtocolStatCards';
 import StatCard from './components/StatCard';
 
 const originalFetch = global.fetch;
@@ -80,9 +81,14 @@ test('renders stats from the upstream data sources during prerender', async () =
     'https://api.rore.supply/api/rounds/current',
   ]);
   assert.match(markup, /rORE Stats Dashboard/);
+  assert.match(markup, /Motherlode/);
+  assert.match(markup, /TVL/);
   assert.match(markup, /\$3210\.45/);
   assert.match(markup, /\$0\.654321/);
   assert.match(markup, /\$98,765/);
+  assert.match(markup, /43,210 ORE locked across 246 participants/);
+  assert.match(markup, /Current upstream spot price\./);
+  assert.match(markup, /Estimated as 95% of the ORE price feed\./);
   assert.match(markup, /43,210<\/p><span[^>]*>ORE<\/span>/);
   assert.match(markup, /246/);
   assert.match(markup, /Current Round #12/);
@@ -99,6 +105,8 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /aria-label="Market snapshot bar chart for WETH and rORE prices"/);
   assert.match(markup, /aria-label="Protocol snapshot bar chart for Motherlode and round metrics"/);
   assert.match(markup, /Last updated <time id="last-update" dateTime="2026-03-09T12:34:56\.000Z"[^>]*>Mar 9, 2026, 12:34:56 PM UTC<\/time> <span[^>]*>\(0 seconds ago\)<\/span>/);
+  assert.doesNotMatch(markup, /24h Volume/);
+  assert.doesNotMatch(markup, /Transactions/);
 });
 
 test('renders fallback UI when the stats request fails', async () => {
@@ -183,6 +191,40 @@ test('renders interactive chart bars with hover detail content', () => {
   assert.match(markup, /role="tooltip"/);
   assert.match(markup, /dashboard-chart-note/);
   assert.match(markup, /Hover or focus a bar for exact values\./);
+});
+
+test('renders protocol stat cards for Motherlode, WETH, and rORE', () => {
+  const markup = renderToStaticMarkup(
+    <ProtocolStatCards
+      statsData={{
+        wethPrice: 3210.45,
+        rorePrice: 0.654321,
+        motherlode: {
+          totalValue: 98765,
+          totalORELocked: 43210,
+          participants: 246,
+        },
+        currentRound: {
+          number: 12,
+          status: 'active',
+          prize: 777,
+          entries: 88,
+          endTime: Date.parse('2026-03-09T12:44:56.000Z'),
+        },
+        lastUpdated: Date.parse('2026-03-09T12:34:56.000Z'),
+      }}
+    />
+  );
+
+  assert.match(markup, /class="[^"]*grid[^"]*md:grid-cols-3[^"]*"/);
+  assert.match(markup, /Motherlode/);
+  assert.match(markup, /\$98,765/);
+  assert.match(markup, /TVL/);
+  assert.match(markup, /43,210 ORE locked across 246 participants/);
+  assert.match(markup, />WETH</);
+  assert.match(markup, /Current upstream spot price\./);
+  assert.match(markup, />rORE</);
+  assert.match(markup, /Estimated as 95% of the ORE price feed\./);
 });
 
 test('renders loading state while the dashboard is fetching', () => {

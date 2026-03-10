@@ -1,8 +1,8 @@
 import DashboardHeader from './components/DashboardHeader';
 import InteractiveBarChart from './components/InteractiveBarChart';
 import MotherlodeCard from './components/MotherlodeCard';
+import ProtocolStatCards from './components/ProtocolStatCards';
 import RoundCard from './components/RoundCard';
-import StatCard from './components/StatCard';
 import { waitForRequest } from './lib/request';
 import { getStatsData } from './lib/stats';
 
@@ -87,71 +87,44 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-8">
-        <DashboardHeader lastUpdatedAt={lastUpdatedAt} />
+      <DashboardHeader lastUpdatedAt={lastUpdatedAt} />
 
-        {!statsData && (
-          <div
-            role="alert"
-            className="dashboard-alert alert rounded-lg px-4 py-3 text-sm"
-          >
-            We could not load the latest stats right now. Please try again in a few minutes.
-          </div>
-        )}
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            title="WETH Price" 
-            value={statsData?.wethPrice ? statsData.wethPrice.toFixed(2) : '—'} 
-            isCurrency={true} 
-            loading={!statsData}
+      {!statsData && (
+        <div
+          role="alert"
+          className="dashboard-alert alert rounded-lg px-4 py-3 text-sm"
+        >
+          We could not load the latest stats right now. Please try again in a few minutes.
+        </div>
+      )}
+
+      <ProtocolStatCards statsData={statsData} />
+
+      {statsData && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <InteractiveBarChart
+            title="Market Snapshot"
+            subtitle="Current token prices normalized to the highest price in this chart."
+            ariaLabel="Market snapshot bar chart for WETH and rORE prices"
+            points={marketChartPoints}
           />
-          <StatCard 
-            title="rORE Price" 
-            value={statsData?.rorePrice ? statsData.rorePrice.toFixed(6) : '—'} 
-            subtitle="Est. price" 
-            isCurrency={true} 
-            loading={!statsData}
-          />
-          <StatCard 
-            title="24h Volume" 
-            value="—" 
-            subtitle="WETH" 
-            isCurrency={true} 
-            loading={true}
-          />
-          <StatCard 
-            title="Transactions" 
-            value="—" 
-            subtitle="Today" 
-            loading={true}
+          <InteractiveBarChart
+            title="Protocol Snapshot"
+            subtitle="Current protocol metrics normalized to the largest value in this chart."
+            ariaLabel="Protocol snapshot bar chart for Motherlode and round metrics"
+            points={protocolChartPoints}
           />
         </div>
+      )}
 
-        {statsData && (
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <InteractiveBarChart
-              title="Market Snapshot"
-              subtitle="Current token prices normalized to the highest price in this chart."
-              ariaLabel="Market snapshot bar chart for WETH and rORE prices"
-              points={marketChartPoints}
-            />
-            <InteractiveBarChart
-              title="Protocol Snapshot"
-              subtitle="Current protocol metrics normalized to the largest value in this chart."
-              ariaLabel="Protocol snapshot bar chart for Motherlode and round metrics"
-              points={protocolChartPoints}
-            />
-          </div>
-        )}
+      {statsData?.motherlode && <MotherlodeCard {...statsData.motherlode} />}
 
-        {statsData?.motherlode && <MotherlodeCard {...statsData.motherlode} />}
-        
-        {statsData?.currentRound && (
-          <RoundCard
-            {...statsData.currentRound}
-            timeRemaining={getTimeRemaining(statsData.currentRound.endTime, statsData.lastUpdated)}
-          />
-        )}
+      {statsData?.currentRound && (
+        <RoundCard
+          {...statsData.currentRound}
+          timeRemaining={getTimeRemaining(statsData.currentRound.endTime, statsData.lastUpdated)}
+        />
+      )}
     </div>
   );
 }
