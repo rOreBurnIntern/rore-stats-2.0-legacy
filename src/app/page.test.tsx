@@ -79,6 +79,11 @@ test('renders stats from the upstream data sources during prerender', async () =
         prize: 777,
         entries: 88,
         endTime,
+        blockPerformance: {
+          1: 2,
+          3: 1,
+          25: 4,
+        },
         winnerTypes: {
           winnerTakeAll: 9,
           split: 3,
@@ -115,6 +120,7 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /88<\/p><span[^>]*>Users<\/span>/);
   assert.match(markup, /Market Snapshot/);
   assert.match(markup, /Protocol Snapshot/);
+  assert.match(markup, /Block Performance/);
   assert.match(markup, /Winner Types/);
   assert.match(markup, /Winner Take All/);
   assert.match(markup, /Split/);
@@ -135,7 +141,10 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /R12/);
   assert.match(markup, /aria-label="Market snapshot bar chart for WETH\/USD and rORE prices"/);
   assert.match(markup, /aria-label="Protocol snapshot bar chart for Motherlode and round metrics"/);
+  assert.match(markup, /aria-label="Block performance bar chart for wins per block 1 through 25"/);
   assert.match(markup, /aria-label="Amount: 1\.2345 WETH\. Total WETH currently locked in Motherlode\."/);
+  assert.match(markup, /aria-label="1: 2 wins\. Completed wins ending on block 1\."/);
+  assert.match(markup, /Scroll to view all 25 blocks\./);
   assert.match(markup, /Last updated <time id="last-update" dateTime="2026-03-09T12:34:56\.000Z"[^>]*>Mar 9, 2026, 12:34:56 PM UTC<\/time> <span[^>]*>\(0 seconds ago\)<\/span>/);
   assert.doesNotMatch(markup, /24h Volume/);
   assert.doesNotMatch(markup, /Transactions/);

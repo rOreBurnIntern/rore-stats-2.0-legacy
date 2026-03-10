@@ -4,6 +4,10 @@ import { parseMotherlodeData, parseMotherlodeHistory, type MotherlodeHistoryPoin
 export interface StatsData {
   wethPrice: number;
   rorePrice: number;
+  blockPerformance?: {
+    block: number;
+    wins: number;
+  }[];
   winnerTypes?: {
     winnerTakeAll: number;
     split: number;
@@ -63,6 +67,15 @@ const WINNER_TYPE_CONTAINER_KEYS = [
 ];
 const WINNER_TYPE_LABEL_KEYS = ['type', 'name', 'label', 'key'];
 const WINNER_TYPE_VALUE_KEYS = ['count', 'value', 'total', 'rounds', 'wins'];
+const BLOCK_PERFORMANCE_KEYS = [
+  'blockPerformance',
+  'winsPerBlock',
+  'blockWins',
+  'blockWinCounts',
+  'blockBreakdown',
+];
+const BLOCK_LABEL_KEYS = ['block', 'blockNumber', 'winningBlock', 'winnerBlock', 'label', 'name', 'key'];
+const ROUND_COLLECTION_KEYS = ['items', 'rounds', 'results', 'data'];
 const REQUEST_INIT: RequestInit & { next: { revalidate: number } } = {
   headers: {
     Accept: 'application/json',
@@ -152,6 +165,153 @@ function readOptionalStringFromKeys(source: Record<string, unknown>, keys: strin
   }
 
   return null;
+}
+
+function parseBlockNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 25) {
+    return value;
+  }
+
+  if (typeof value !== 'string' || value.trim() === '') {
+    return null;
+  }
+
+  const directValue = Number(value);
+
+  if (Number.isInteger(directValue) && directValue >= 1 && directValue <= 25) {
+    return directValue;
+  }
+
+  const matchedValue = value.match(/\d+/);
+
+  if (!matchedValue) {
+    return null;
+  }
+
+  const parsedValue = Number(matchedValue[0]);
+  return Number.isInteger(parsedValue) && parsedValue >= 1 && parsedValue <= 25 ? parsedValue : null;
+}
+
+function readOptionalBlockFromKeys(source: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const parsedBlock = parseBlockNumber(source[key]);
+
+    if (parsedBlock !== null) {
+      return parsedBlock;
+    }
+  }
+
+  return null;
+}
+
+function readOptionalNumericValue(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsedValue = Number(value);
+
+    if (Number.isFinite(parsedValue)) {
+      return parsedValue;
+    }
+  }
+
+  return null;
+}
+
+function addWinsByBlock(winsByBlock: Map<number, number>, block: number, wins: number) {
+  winsByBlock.set(block, (winsByBlock.get(block) ?? 0) + Math.max(wins, 0));
+}
+
+function buildBlockPerformance(
+  winsByBlock: Map<number, number>
+): StatsData['blockPerformance'] | undefined {
+  const totalWins = Array.from(winsByBlock.values()).reduce((sum, wins) => sum + wins, 0);
+
+  if (totalWins <= 0) {
+    return undefined;
+  }
+
+  return Array.from({ length: 25 }, (_, index) => ({
+    block: index + 1,
+    wins: winsByBlock.get(index + 1) ?? 0,
+  }));
+}
+
+function parseBlockPerformanceRecord(
+  source: Record<string, unknown>
+): StatsData['blockPerformance'] | undefined {
+  const winsByBlock = new Map<number, number>();
+
+  for (const [key, value] of Object.entries(source)) {
+    const block = parseBlockNumber(key);
+    const wins = readOptionalNumericValue(value)
+      ?? (isRecord(value) ? readOptionalNumberFromKeys(value, WINNER_TYPE_VALUE_KEYS) : null);
+
+    if (block !== null && wins !== null) {
+      addWinsByBlock(winsByBlock, block, wins);
+    }
+  }
+
+  return buildBlockPerformance(winsByBlock);
+}
+
+function parseBlockPerformanceArray(
+  source: unknown[]
+): StatsData['blockPerformance'] | undefined {
+  const winsByBlock = new Map<number, number>();
+
+  for (const entry of source) {
+    if (!isRecord(entry)) {
+      continue;
+    }
+
+    const block = readOptionalBlockFromKeys(entry, BLOCK_LABEL_KEYS)
+      ?? (isRecord(entry.winner) ? readOptionalBlockFromKeys(entry.winner, BLOCK_LABEL_KEYS) : null)
+      ?? (isRecord(entry.result) ? readOptionalBlockFromKeys(entry.result, BLOCK_LABEL_KEYS) : null);
+
+    if (block === null) {
+      continue;
+    }
+
+    const wins = readOptionalNumberFromKeys(entry, WINNER_TYPE_VALUE_KEYS)
+      ?? (isRecord(entry.winner) ? readOptionalNumberFromKeys(entry.winner, WINNER_TYPE_VALUE_KEYS) : null)
+      ?? (isRecord(entry.result) ? readOptionalNumberFromKeys(entry.result, WINNER_TYPE_VALUE_KEYS) : null)
+      ?? 1;
+
+    addWinsByBlock(winsByBlock, block, wins);
+  }
+
+  return buildBlockPerformance(winsByBlock);
+}
+
+function parseBlockPerformance(payload: unknown): StatsData['blockPerformance'] | undefined {
+  if (Array.isArray(payload)) {
+    return parseBlockPerformanceArray(payload);
+  }
+
+  if (!isRecord(payload)) {
+    return undefined;
+  }
+
+  for (const key of BLOCK_PERFORMANCE_KEYS) {
+    const parsedBlockPerformance = parseBlockPerformance(payload[key]);
+
+    if (parsedBlockPerformance) {
+      return parsedBlockPerformance;
+    }
+  }
+
+  for (const key of ROUND_COLLECTION_KEYS) {
+    const parsedBlockPerformance = parseBlockPerformance(payload[key]);
+
+    if (parsedBlockPerformance) {
+      return parsedBlockPerformance;
+    }
+  }
+
+  return parseBlockPerformanceRecord(payload);
 }
 
 function buildWinnerTypes(
@@ -298,6 +458,7 @@ export async function getStatsData(): Promise<StatsData | null> {
     ]);
     const pricesData = parsePricesData(pricesPayload);
     const currentRoundData = parseCurrentRoundData(currentRoundPayload);
+    const blockPerformance = parseBlockPerformance(currentRoundPayload) ?? parseBlockPerformance(motherlodePayload);
     const winnerTypes = parseWinnerTypes(currentRoundPayload);
     const motherlodeData = parseMotherlodeData(motherlodePayload, currentRoundPayload);
     const motherlodeHistory = parseMotherlodeHistory(
@@ -312,6 +473,7 @@ export async function getStatsData(): Promise<StatsData | null> {
     return {
       wethPrice: pricesData.weth,
       rorePrice: pricesData.rore,
+      ...(blockPerformance ? { blockPerformance } : {}),
       ...(winnerTypes ? { winnerTypes } : {}),
       motherlode,
       currentRound: {

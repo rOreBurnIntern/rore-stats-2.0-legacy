@@ -172,6 +172,13 @@ body {
 .interactive-chart {
   position: relative;
   min-height: 18rem;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.interactive-chart__plot {
+  position: relative;
+  min-height: inherit;
 }
 
 .interactive-chart__grid {
@@ -191,7 +198,6 @@ body {
   z-index: 1;
   display: grid;
   height: 16rem;
-  grid-template-columns: repeat(auto-fit, minmax(3.5rem, 1fr));
   align-items: end;
   gap: 1rem;
 }

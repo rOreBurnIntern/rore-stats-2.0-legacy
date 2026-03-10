@@ -347,6 +347,70 @@ test('includes winner type counts when the upstream round payload provides them'
   });
 });
 
+test('includes wins per block for blocks 1 through 25 when the upstream round payload provides them', async () => {
+  Date.now = () => 1_741_525_600_000;
+
+  let requestCount = 0;
+  mockFetch(async () => {
+    requestCount += 1;
+
+    if (requestCount === 1) {
+      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      });
+    }
+
+    if (requestCount === 2) {
+      return new Response(
+        JSON.stringify({
+          totalValue: '1234500000000000000',
+          totalORELocked: 8910,
+          participants: 42,
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        round: 7,
+        status: 'active',
+        prize: 999,
+        entries: 77,
+        endTime: 1_741_526_200_000,
+        blockPerformance: {
+          1: 3,
+          5: '2',
+          25: 1,
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
+  });
+
+  const response = await GET();
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(body.blockPerformance, Array.from({ length: 25 }, (_, index) => ({
+    block: index + 1,
+    wins: index === 0 ? 3 : index === 4 ? 2 : index === 24 ? 1 : 0,
+  })));
+});
+
 test('falls back to the ore field when the upstream rORE price is unavailable', async () => {
   Date.now = () => 1_741_525_600_000;
 

@@ -27,6 +27,10 @@ function formatNumber(value: number, suffix?: string, maximumFractionDigits = 0)
   return suffix ? `${formattedValue} ${suffix}` : formattedValue;
 }
 
+function formatWins(value: number) {
+  return formatNumber(value, value === 1 ? 'win' : 'wins');
+}
+
 export default async function Home() {
   await waitForRequest();
   const statsData = await getStatsData();
@@ -86,6 +90,14 @@ export default async function Home() {
         },
       ]
     : [];
+  const blockPerformanceChartPoints = statsData?.blockPerformance
+    ? statsData.blockPerformance.map((point) => ({
+        label: point.block.toString(),
+        value: point.wins,
+        formattedValue: formatWins(point.wins),
+        detail: `Completed wins ending on block ${point.block}.`,
+      }))
+    : [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -98,20 +110,34 @@ export default async function Home() {
       <ProtocolStatCards statsData={statsData} />
 
       {statsData && (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <InteractiveBarChart
-            title="Market Snapshot"
-            subtitle="Current token prices normalized to the highest price in this chart."
-            ariaLabel="Market snapshot bar chart for WETH/USD and rORE prices"
-            points={marketChartPoints}
-          />
-          <InteractiveBarChart
-            title="Protocol Snapshot"
-            subtitle="Current protocol metrics normalized to the largest value in this chart."
-            ariaLabel="Protocol snapshot bar chart for Motherlode and round metrics"
-            points={protocolChartPoints}
-          />
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <InteractiveBarChart
+              title="Market Snapshot"
+              subtitle="Current token prices normalized to the highest price in this chart."
+              ariaLabel="Market snapshot bar chart for WETH/USD and rORE prices"
+              points={marketChartPoints}
+            />
+            <InteractiveBarChart
+              title="Protocol Snapshot"
+              subtitle="Current protocol metrics normalized to the largest value in this chart."
+              ariaLabel="Protocol snapshot bar chart for Motherlode and round metrics"
+              points={protocolChartPoints}
+            />
+          </div>
+
+          {blockPerformanceChartPoints.length > 0 && (
+            <InteractiveBarChart
+              title="Block Performance"
+              subtitle="Completed wins grouped by ending block for blocks 1 through 25."
+              ariaLabel="Block performance bar chart for wins per block 1 through 25"
+              note="Hover or focus a bar for exact values. Scroll to view all 25 blocks."
+              minColumnWidth="2.5rem"
+              maxBarWidth="2.5rem"
+              points={blockPerformanceChartPoints}
+            />
+          )}
+        </>
       )}
 
       {statsData?.winnerTypes && (
