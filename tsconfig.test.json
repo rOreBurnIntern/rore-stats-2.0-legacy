@@ -38,6 +38,8 @@
     "src/app/lib/stats.ts",
     "src/app/lib/time.ts",
     "src/app/lib/time.test.ts",
+    "src/app/components/DashboardHeader.tsx",
+    "src/app/components/DashboardHeader.test.tsx",
     "src/app/components/ErrorDisplay.tsx",
     "src/app/components/ErrorDisplay.test.tsx",
     "src/app/components/InteractiveBarChart.tsx",
