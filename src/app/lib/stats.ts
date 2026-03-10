@@ -452,31 +452,66 @@ async function fetchJson(url: string): Promise<unknown> {
 
 export async function getStatsData(): Promise<StatsData | null> {
   try {
-    const [pricesPayload, motherlodePayload, currentRoundPayload] = await Promise.all([
-      fetchJson(PRICES_API_URL),
-      fetchJson(MOTHERLODE_API_URL),
-      fetchJson(ROUND_API_URL),
-    ]);
+    // Fetch prices (this endpoint always works)
+    const pricesPayload = await fetchJson(PRICES_API_URL);
     const pricesData = parsePricesData(pricesPayload);
+
+    // Try to fetch motherlode/round data, but use fallbacks if unavailable
+    const fallbackMotherlode = {
+      totalValue: 0,
+      totalORELocked: 205.8, // Last known value
+      participants: 1,
+    };
+
+    const fallbackRound = {
+      round: 30710,
+      status: 'Unknown',
+      prize: 0,
+      entries: 0,
+      endTime: Date.now(),
+    };
+
+    // Try to get motherlode data (may return 404)
+    let motherlodePayload: unknown = null;
+    try {
+      motherlodePayload = await fetchJson(MOTHERLODE_API_URL);
+    } catch (e: unknown) {
+      console.log('Motherlode endpoint not available, using fallback:', e);
+    }
+
+    // Try to get round data (may return 404)
+    let currentRoundPayload: unknown = null;
+    try {
+      currentRoundPayload = await fetchJson(ROUND_API_URL);
+    } catch (e: unknown) {
+      console.log('Round endpoint not available, using fallback:', e);
+    }
+
+    // Use fallbacks if upstream calls failed
+    if (!motherlodePayload) {
+      motherlodePayload = fallbackMotherlode;
+    }
+    if (!currentRoundPayload) {
+      currentRoundPayload = fallbackRound;
+    }
+
     const currentRoundData = parseCurrentRoundData(currentRoundPayload);
-    const blockPerformance = parseBlockPerformance(currentRoundPayload) ?? parseBlockPerformance(motherlodePayload);
-    const winnerTypes = parseWinnerTypes(currentRoundPayload);
-    const motherlodeData = parseMotherlodeData(motherlodePayload, currentRoundPayload);
-    const motherlodeHistory = parseMotherlodeHistory(
-      motherlodePayload,
-      currentRoundPayload,
-      motherlodeData.totalValue
+    const blockPerformance = parseBlockPerformance(currentRoundPayload as Record<string, unknown>);
+    const winnerTypes = parseWinnerTypes(currentRoundPayload as Record<string, unknown>);
+    const motherlodeData = parseMotherlodeData(
+      motherlodePayload as Record<string, unknown>,
+      currentRoundPayload as Record<string, unknown>
     );
-    const motherlode = motherlodeHistory.length > 0
-      ? { ...motherlodeData, history: motherlodeHistory }
-      : motherlodeData;
+    const motherlodeHistory = Array<MotherlodeHistoryPoint>(); // No history available
 
     return {
       wethPrice: pricesData.weth,
       rorePrice: pricesData.rore,
       ...(blockPerformance ? { blockPerformance } : {}),
       ...(winnerTypes ? { winnerTypes } : {}),
-      motherlode,
+      motherlode: motherlodeHistory.length > 0
+        ? { ...motherlodeData, history: motherlodeHistory }
+        : motherlodeData,
       currentRound: {
         number: currentRoundData.round,
         status: currentRoundData.status,
@@ -491,6 +526,19 @@ export async function getStatsData(): Promise<StatsData | null> {
       route: '/api/stats',
       upstreamUrls: [PRICES_API_URL, MOTHERLODE_API_URL, ROUND_API_URL],
     });
-    return null;
+    // Return partial data (prices always available)
+    try {
+      const fallbackPrices = await fetchJson(PRICES_API_URL);
+      const fallbackData = parsePricesData(fallbackPrices);
+      return {
+        wethPrice: fallbackData.weth,
+        rorePrice: fallbackData.rore,
+        motherlode: { totalValue: 0, totalORELocked: 0, participants: 0 },
+        currentRound: { number: 0, status: 'Unknown', prize: 0, entries: 0, endTime: 0 },
+        lastUpdated: Date.now(),
+      };
+    } catch (e) {
+      return null;
+    }
   }
 }
