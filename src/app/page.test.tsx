@@ -132,6 +132,23 @@ test('renders stat card content with wrapping classes for narrow screens', () =>
   assert.match(markup, /class="[^"]*w-full[^"]*min-w-0[^"]*"/);
   assert.match(markup, /class="[^"]*flex[^"]*flex-wrap[^"]*gap-x-2[^"]*gap-y-1[^"]*"/);
   assert.match(markup, /class="[^"]*break-words[^"]*text-2xl[^"]*"/);
+  assert.match(markup, /aria-label="up trend \+99\.99%"/);
+  assert.match(markup, /text-green-500/);
+  assert.match(markup, /↑/);
+});
+
+test('renders negative stat card trends as down indicators', () => {
+  const markup = renderToStaticMarkup(
+    <StatCard
+      title="Drawdown"
+      value="12"
+      change="-4.20%"
+    />
+  );
+
+  assert.match(markup, /aria-label="down trend -4\.20%"/);
+  assert.match(markup, /text-red-400/);
+  assert.match(markup, /↓/);
 });
 
 test('renders interactive chart bars with hover detail content', () => {

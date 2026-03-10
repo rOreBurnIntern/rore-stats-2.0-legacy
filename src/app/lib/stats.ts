@@ -18,7 +18,7 @@ export interface StatsData {
 
 const PRICES_API_URL = 'https://api.rore.supply/api/prices';
 const MOTHERLODE_API_URL = 'https://api.rore.supply/api/motherlode';
-const ROUNDS_API_URL = 'https://api.rore.supply/api/rounds/current';
+const ROUND_API_URL = 'https://api.rore.supply/api/rounds/current';
 const REQUEST_INIT: RequestInit & { next: { revalidate: number } } = {
   headers: {
     Accept: 'application/json',
@@ -38,41 +38,27 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 export async function getStatsData(): Promise<StatsData | null> {
   try {
-    const [pricesData, motherlodeData, roundsData] = await Promise.all([
+    const [pricesData, motherlodeData, roundData] = await Promise.all([
       fetchJson<{ weth: number; ore: number }>(PRICES_API_URL),
-      fetchJson<{
-        totalValue: number;
-        totalORELocked: number;
-        participants: number;
-      }>(MOTHERLODE_API_URL),
-      fetchJson<{
-        round: number;
-        status: string;
-        prize: number;
-        entries: number;
-        endTime: number;
-      }>(ROUNDS_API_URL),
+      fetchJson<{ totalValue: number; totalORELocked: number; participants: number }>(MOTHERLODE_API_URL),
+      fetchJson<{ round: number; status: string; prize: number; entries: number; endTime: number }>(ROUND_API_URL),
     ]);
 
     return {
       wethPrice: pricesData.weth,
       rorePrice: pricesData.ore * 0.95,
-      motherlode: {
-        totalValue: motherlodeData.totalValue,
-        totalORELocked: motherlodeData.totalORELocked,
-        participants: motherlodeData.participants,
-      },
+      motherlode: motherlodeData,
       currentRound: {
-        number: roundsData.round,
-        status: roundsData.status,
-        prize: roundsData.prize,
-        entries: roundsData.entries,
-        endTime: roundsData.endTime,
+        number: roundData.round,
+        status: roundData.status,
+        prize: roundData.prize,
+        entries: roundData.entries,
+        endTime: roundData.endTime,
       },
       lastUpdated: Date.now(),
     };
   } catch (error) {
-    console.error('Error fetching aggregated stats:', error);
+    console.error('Error fetching stats:', error);
     return null;
   }
 }
