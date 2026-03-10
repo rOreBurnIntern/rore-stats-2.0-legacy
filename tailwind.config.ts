@@ -1,3 +1,4 @@
+import daisyui from "daisyui";
 import type { Config } from "tailwindcss";
 
 const config = {
@@ -34,7 +35,7 @@ const config = {
       },
     ],
   },
-  plugins: [require("daisyui")],
+  plugins: [daisyui],
 } satisfies Config & {
   daisyui: {
     themes: Array<Record<string, Record<string, string>>>;

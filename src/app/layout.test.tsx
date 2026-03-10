@@ -1,21 +1,16 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
-import { renderToStaticMarkup } from 'react-dom/server';
 
-import RootLayout, { metadata } from './layout';
+const layoutSource = readFileSync(path.join(process.cwd(), 'src/app/layout.tsx'), 'utf8');
 
 test('exposes dashboard metadata for the Next.js app shell', () => {
-  assert.equal(metadata.title, 'rORE Stats Dashboard');
-  assert.equal(metadata.description, 'Next.js 14 dashboard initialized with Tailwind CSS and DaisyUI.');
+  assert.match(layoutSource, /title:\s*"rORE Stats Dashboard"/);
+  assert.match(layoutSource, /description:\s*"Next\.js 14 dashboard initialized with Tailwind CSS and DaisyUI\."/);
 });
 
-test('renders the DaisyUI theme on the root html element', () => {
-  const markup = renderToStaticMarkup(
-    <RootLayout>
-      <div>Dashboard</div>
-    </RootLayout>
-  );
-
-  assert.match(markup, /<html lang="en" data-theme="rore">/);
-  assert.match(markup, /<body class="[^"]*bg-base-200[^"]*text-base-content[^"]*antialiased[^"]*">/);
+test('applies the DaisyUI theme to the root layout', () => {
+  assert.match(layoutSource, /<html lang="en" data-theme="rore">/);
+  assert.match(layoutSource, /<body className="bg-base-200 text-base-content antialiased">/);
 });

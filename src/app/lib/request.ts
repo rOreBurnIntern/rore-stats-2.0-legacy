@@ -1,8 +1,13 @@
-import { connection } from 'next/server';
-
 const MISSING_REQUEST_SCOPE_ERROR = 'outside a request scope';
 
 export async function waitForRequest() {
+  const nextServer = await import('next/server');
+  const connection = 'connection' in nextServer ? nextServer.connection : null;
+
+  if (typeof connection !== 'function') {
+    return;
+  }
+
   try {
     await connection();
   } catch (error) {
