@@ -21,6 +21,7 @@
     "src/app/lib/stats.ts",
     "src/app/lib/time.ts",
     "src/app/lib/time.test.ts",
+    "src/app/loading.tsx",
     "src/app/page.tsx",
     "src/app/page.test.tsx"
   ]

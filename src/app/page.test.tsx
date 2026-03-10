@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 
+import Loading from './loading';
 import Home from './page';
 
 const originalFetch = global.fetch;
@@ -96,4 +97,10 @@ test('renders fallback UI when the stats request fails', async () => {
 
   assert.match(markup, /id="last-update">N\/A<\/span>/);
   assert.doesNotMatch(markup, /Current Round #/);
+});
+
+test('renders loading state while the dashboard is fetching', () => {
+  const markup = renderToStaticMarkup(<Loading />);
+
+  assert.match(markup, /Loading\.\.\./);
 });
