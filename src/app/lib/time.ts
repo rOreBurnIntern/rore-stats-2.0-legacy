@@ -15,3 +15,16 @@ export function formatTimeAgo(timestamp: number, referenceTime: number): string 
 
   return `${elapsedHours} ${elapsedHours === 1 ? 'hour' : 'hours'} ago`;
 }
+
+export function formatTimestamp(timestamp: number): string {
+  return new Intl.DateTimeFormat('en-US', {
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    month: 'short',
+    second: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+    year: 'numeric',
+  }).format(timestamp);
+}

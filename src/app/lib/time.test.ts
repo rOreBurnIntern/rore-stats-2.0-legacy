@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatTimeAgo } from './time';
+import { formatTimeAgo, formatTimestamp } from './time';
 
 test('formats elapsed seconds', () => {
   assert.equal(formatTimeAgo(1_000, 31_000), '30 seconds ago');
@@ -20,4 +20,8 @@ test('formats elapsed hours', () => {
 
 test('clamps future timestamps to zero seconds ago', () => {
   assert.equal(formatTimeAgo(10_000, 9_000), '0 seconds ago');
+});
+
+test('formats timestamps in UTC', () => {
+  assert.equal(formatTimestamp(Date.parse('2026-03-09T12:34:56.000Z')), 'Mar 9, 2026, 12:34:56 PM UTC');
 });

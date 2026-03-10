@@ -3,15 +3,16 @@
 import { useEffect, useState } from 'react';
 
 import { scheduleAutoRefresh } from '../lib/auto-refresh';
-import { formatTimeAgo } from '../lib/time';
+import { formatTimeAgo, formatTimestamp } from '../lib/time';
 
 interface DashboardHeaderProps {
   lastUpdatedAt: number | null;
-  initialLastUpdatedLabel: string;
 }
 
-export default function DashboardHeader({ lastUpdatedAt, initialLastUpdatedLabel }: DashboardHeaderProps) {
-  const [lastUpdatedLabel, setLastUpdatedLabel] = useState(initialLastUpdatedLabel);
+export default function DashboardHeader({ lastUpdatedAt }: DashboardHeaderProps) {
+  const [lastUpdatedLabel, setLastUpdatedLabel] = useState(() =>
+    lastUpdatedAt === null ? 'N/A' : formatTimeAgo(lastUpdatedAt, lastUpdatedAt)
+  );
 
   useEffect(() => {
     if (lastUpdatedAt === null) {
@@ -34,10 +35,26 @@ export default function DashboardHeader({ lastUpdatedAt, initialLastUpdatedLabel
         <p className="dashboard-muted text-sm">Live protocol analytics and market data</p>
       </div>
       <div className="dashboard-subtle text-xs">
-        Last updated{' '}
-        <span id="last-update" suppressHydrationWarning className="dashboard-accent">
-          {lastUpdatedLabel}
-        </span>
+        {lastUpdatedAt === null ? (
+          <>
+            Last updated{' '}
+            <span id="last-update" className="dashboard-accent">
+              N/A
+            </span>
+          </>
+        ) : (
+          <>
+            Last updated{' '}
+            <time
+              id="last-update"
+              dateTime={new Date(lastUpdatedAt).toISOString()}
+              className="dashboard-accent"
+            >
+              {formatTimestamp(lastUpdatedAt)}
+            </time>{' '}
+            <span suppressHydrationWarning>({lastUpdatedLabel})</span>
+          </>
+        )}
       </div>
     </header>
   );

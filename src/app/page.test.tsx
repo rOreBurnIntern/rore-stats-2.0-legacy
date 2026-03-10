@@ -93,8 +93,8 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /Hover or focus a bar for exact values\./);
   assert.match(markup, /aria-label="Market snapshot bar chart for WETH and rORE prices"/);
   assert.match(markup, /aria-label="Protocol snapshot bar chart for Motherlode and round metrics"/);
-  assert.match(markup, /Last updated <span id="last-update"[^>]*>0 seconds ago<\/span>/);
-  assert.match(markup, /Data sourced from rORE Protocol API • Updated 0 seconds ago/);
+  assert.match(markup, /Last updated <time id="last-update" dateTime="2026-03-09T12:34:56\.000Z"[^>]*>Mar 9, 2026, 12:34:56 PM UTC<\/time> <span[^>]*>\(0 seconds ago\)<\/span>/);
+  assert.match(markup, /Data sourced from rORE Protocol API/);
 });
 
 test('renders fallback UI when the stats request fails', async () => {

@@ -5,7 +5,6 @@ import RoundCard from './components/RoundCard';
 import StatCard from './components/StatCard';
 import { waitForRequest } from './lib/request';
 import { getStatsData } from './lib/stats';
-import { formatTimeAgo } from './lib/time';
 
 function getTimeRemaining(endTime: number, referenceTime: number) {
   return endTime > referenceTime
@@ -31,7 +30,6 @@ export default async function Home() {
   const statsData = await getStatsData();
 
   const lastUpdatedAt = statsData?.lastUpdated ?? null;
-  const lastUpdatedLabel = lastUpdatedAt === null ? 'N/A' : formatTimeAgo(lastUpdatedAt, lastUpdatedAt);
   const remainingMinutes = statsData?.currentRound
     ? Math.max(Math.ceil((statsData.currentRound.endTime - statsData.lastUpdated) / (1000 * 60)), 0)
     : null;
@@ -90,7 +88,7 @@ export default async function Home() {
   return (
     <div className="app-shell flex min-h-screen flex-col overflow-x-auto font-sans">
       <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-8 px-4 py-8">
-        <DashboardHeader lastUpdatedAt={lastUpdatedAt} initialLastUpdatedLabel={lastUpdatedLabel} />
+        <DashboardHeader lastUpdatedAt={lastUpdatedAt} />
 
         {!statsData && (
           <div
@@ -156,9 +154,7 @@ export default async function Home() {
           />
         )}
 
-        <div className="dashboard-footer mt-12 text-center text-sm">
-          Data sourced from rORE Protocol API • Updated {lastUpdatedLabel}
-        </div>
+        <div className="dashboard-footer mt-12 text-center text-sm">Data sourced from rORE Protocol API</div>
       </main>
     </div>
   );
