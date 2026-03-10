@@ -12,9 +12,6 @@ test('scans the app directory for Tailwind classes', () => {
 });
 
 test('registers DaisyUI with the custom rore theme', () => {
-  assert.match(tailwindConfigSource, /import daisyui from "daisyui"/);
-  assert.match(tailwindConfigSource, /plugins:\s*\[daisyui\]/);
-  assert.match(tailwindConfigSource, /rore:\s*\{/);
-  assert.match(tailwindConfigSource, /primary:\s*"#ff9b45"/);
-  assert.match(tailwindConfigSource, /"base-content":\s*"#f5e7d7"/);
+  assert.match(tailwindConfigSource, /plugins:\s*\[\]/);
+  assert.doesNotMatch(tailwindConfigSource, /daisyui:/);
 });

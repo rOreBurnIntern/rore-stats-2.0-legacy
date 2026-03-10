@@ -12,7 +12,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="rore">
+    <html lang="en" data-theme="coffee">
+      <head>
+        <link rel="stylesheet" href="/vendor/daisyui/themes.css" />
+        <link rel="stylesheet" href="/vendor/daisyui/styled.css" />
+      </head>
       <body className="bg-base-200 text-base-content antialiased">{children}</body>
     </html>
   );

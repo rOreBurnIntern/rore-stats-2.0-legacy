@@ -11,6 +11,8 @@ test('exposes dashboard metadata for the Next.js app shell', () => {
 });
 
 test('applies the DaisyUI theme to the root layout', () => {
-  assert.match(layoutSource, /<html lang="en" data-theme="rore">/);
+  assert.match(layoutSource, /<html lang="en" data-theme="coffee">/);
+  assert.match(layoutSource, /href="\/vendor\/daisyui\/themes\.css"/);
+  assert.match(layoutSource, /href="\/vendor\/daisyui\/styled\.css"/);
   assert.match(layoutSource, /<body className="bg-base-200 text-base-content antialiased">/);
 });
