@@ -87,7 +87,7 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /Current Round #12/);
   assert.match(markup, /777<\/p><span[^>]*>rORE<\/span>/);
   assert.match(markup, /88<\/p><span[^>]*>Users<\/span>/);
-  assert.match(markup, /Last updated <span id="last-update">0 seconds ago<\/span>/);
+  assert.match(markup, /Last updated <span id="last-update"[^>]*>0 seconds ago<\/span>/);
   assert.match(markup, /Data sourced from rORE Protocol API • Updated 0 seconds ago/);
 });
 
@@ -98,7 +98,7 @@ test('renders fallback UI when the stats request fails', async () => {
 
   assert.match(markup, /role="alert"/);
   assert.match(markup, /We could not load the latest stats right now\. Please try again in a few minutes\./);
-  assert.match(markup, /id="last-update">N\/A<\/span>/);
+  assert.match(markup, /id="last-update"[^>]*>N\/A<\/span>/);
   assert.doesNotMatch(markup, /Current Round #/);
 });
 
@@ -107,8 +107,10 @@ test('renders mobile overflow safeguards in the page shell', async () => {
 
   const markup = renderToStaticMarkup(await Home());
 
-  assert.match(markup, /class="[^"]*min-h-screen[^"]*overflow-x-auto[^"]*"/);
+  assert.match(markup, /class="[^"]*app-shell[^"]*min-h-screen[^"]*overflow-x-auto[^"]*"/);
   assert.match(markup, /<main class="[^"]*max-w-7xl[^"]*min-w-0[^"]*"/);
+  assert.match(markup, /class="[^"]*dashboard-panel[^"]*"/);
+  assert.match(markup, /class="[^"]*dashboard-alert[^"]*"/);
 });
 
 test('renders stat card content with wrapping classes for narrow screens', () => {
@@ -129,6 +131,7 @@ test('renders stat card content with wrapping classes for narrow screens', () =>
 test('renders loading state while the dashboard is fetching', () => {
   const markup = renderToStaticMarkup(<Loading />);
 
-  assert.match(markup, /class="[^"]*min-h-screen[^"]*overflow-x-auto[^"]*"/);
+  assert.match(markup, /class="[^"]*app-shell[^"]*min-h-screen[^"]*overflow-x-auto[^"]*"/);
+  assert.match(markup, /class="[^"]*dashboard-muted[^"]*text-lg[^"]*"/);
   assert.match(markup, /Loading\.\.\./);
 });

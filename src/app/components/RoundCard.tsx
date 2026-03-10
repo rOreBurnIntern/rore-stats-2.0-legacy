@@ -13,11 +13,11 @@ interface RoundCardProps {
 
 export default function RoundCard({ number, status, prize, entries, endTime, timeRemaining }: RoundCardProps) {
   return (
-    <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800">
-      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
+    <div className="dashboard-panel rounded-2xl p-6">
+      <h3 className="dashboard-heading mb-4 text-base font-semibold">
         Current Round #{number !== null ? number : '—'}
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <StatCard 
           title="Status" 
           value={status || '—'} 

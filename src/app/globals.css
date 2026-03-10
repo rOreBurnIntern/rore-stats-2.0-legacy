@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #120904;
+  --foreground: #f5e7d7;
+  --page-background-glow: rgba(255, 141, 63, 0.22);
+  --page-background-glow-secondary: rgba(255, 204, 123, 0.14);
+  --surface-elevated: rgba(43, 25, 15, 0.94);
+  --surface-border: rgba(255, 168, 89, 0.2);
+  --text-muted: #d4b99a;
+  --text-subtle: #9b7f62;
+  --accent: #ff9b45;
+  --accent-soft: rgba(255, 155, 69, 0.18);
+  --alert-background: rgba(72, 34, 16, 0.78);
+  --alert-border: rgba(255, 155, 69, 0.32);
+  --alert-foreground: #ffe0bb;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: "Arial", "Helvetica", sans-serif;
+  --font-mono: "Courier New", monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(circle at top, var(--page-background-glow), transparent 34%),
+    radial-gradient(circle at bottom right, var(--page-background-glow-secondary), transparent 28%),
+    linear-gradient(180deg, #1a0f09 0%, #120904 48%, #0b0503 100%);
+}
+
+.app-shell {
+  background-color: var(--background);
+}
+
+.dashboard-panel {
+  background: linear-gradient(180deg, rgba(43, 25, 15, 0.96), rgba(26, 15, 9, 0.94));
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+.dashboard-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+.dashboard-card:hover {
+  border-color: rgba(255, 168, 89, 0.32);
+}
+
+.dashboard-heading {
+  color: var(--foreground);
+  text-shadow: 0 0 18px rgba(255, 110, 31, 0.16);
+}
+
+.dashboard-accent {
+  color: var(--accent);
+}
+
+.dashboard-muted {
+  color: var(--text-muted);
+}
+
+.dashboard-subtle {
+  color: var(--text-subtle);
+}
+
+.dashboard-alert {
+  background: var(--alert-background);
+  border: 1px solid var(--alert-border);
+  color: var(--alert-foreground);
+}
+
+.dashboard-footer {
+  color: var(--text-subtle);
 }

@@ -20,14 +20,14 @@ export default async function Home() {
   const lastUpdatedLabel = lastUpdatedAt === null ? 'N/A' : formatTimeAgo(lastUpdatedAt, lastUpdatedAt);
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-auto bg-zinc-50 font-sans dark:bg-black">
+    <div className="app-shell flex min-h-screen flex-col overflow-x-auto font-sans">
       <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-8 px-4 py-8">
         <DashboardHeader lastUpdatedAt={lastUpdatedAt} initialLastUpdatedLabel={lastUpdatedLabel} />
 
         {!statsData && (
           <div
             role="alert"
-            className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100"
+            className="dashboard-alert rounded-lg px-4 py-3 text-sm"
           >
             We could not load the latest stats right now. Please try again in a few minutes.
           </div>
@@ -71,7 +71,7 @@ export default async function Home() {
           />
         )}
 
-        <div className="text-center mt-12 text-sm text-zinc-500 dark:text-zinc-600">
+        <div className="dashboard-footer mt-12 text-center text-sm">
           Data sourced from rORE Protocol API • Updated {lastUpdatedLabel}
         </div>
       </main>
