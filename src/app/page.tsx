@@ -47,7 +47,7 @@ export default async function Home() {
           label: 'rORE',
           value: statsData.rorePrice,
           formattedValue: formatCurrency(statsData.rorePrice, 6),
-          detail: 'Estimated as 95% of the ORE price feed.',
+          detail: 'Current upstream rORE spot price in USD.',
         },
       ]
     : [];

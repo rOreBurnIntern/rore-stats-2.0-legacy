@@ -29,7 +29,7 @@ test('renders stats from the upstream data sources during prerender', async () =
       return new Response(
         JSON.stringify({
           weth: 3210.45,
-          ore: 0.688758947368421,
+          rore: 0.688758947368421,
         }),
         {
           headers: {
@@ -83,11 +83,11 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /rORE Stats Dashboard/);
   assert.match(markup, /Motherlode/);
   assert.match(markup, /\$3210\.45/);
-  assert.match(markup, /\$0\.654321/);
+  assert.match(markup, /\$0\.688759/);
   assert.match(markup, /1\.2345<\/p><span[^>]*>WETH<\/span>/);
   assert.match(markup, /43,210 ORE locked across 246 participants/);
   assert.match(markup, /Current upstream WETH spot price in USD\./);
-  assert.match(markup, /Estimated as 95% of the ORE price feed\./);
+  assert.match(markup, /Current upstream rORE spot price in USD\./);
   assert.match(markup, /43,210<\/p><span[^>]*>ORE<\/span>/);
   assert.match(markup, /246/);
   assert.match(markup, /Current Round #12/);
@@ -199,7 +199,7 @@ test('renders protocol stat cards for Motherlode, WETH, and rORE', () => {
     <ProtocolStatCards
       statsData={{
         wethPrice: 3210.45,
-        rorePrice: 0.654321,
+        rorePrice: 0.688759,
         motherlode: {
           totalValue: 1.2345,
           totalORELocked: 43210,
@@ -224,7 +224,7 @@ test('renders protocol stat cards for Motherlode, WETH, and rORE', () => {
   assert.match(markup, />WETH</);
   assert.match(markup, /Current upstream WETH spot price in USD\./);
   assert.match(markup, />rORE</);
-  assert.match(markup, /Estimated as 95% of the ORE price feed\./);
+  assert.match(markup, /Current upstream rORE spot price in USD\./);
 });
 
 test('renders loading state while the dashboard is fetching', () => {

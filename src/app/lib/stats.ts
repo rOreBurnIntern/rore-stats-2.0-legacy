@@ -21,7 +21,7 @@ export interface StatsData {
 
 interface PricesApiResponse {
   weth: number;
-  ore: number;
+  rore: number;
 }
 
 interface CurrentRoundApiResponse {
@@ -101,7 +101,7 @@ function parsePricesData(payload: unknown): PricesApiResponse {
 
   return {
     weth: readNumberFromKeys(payload, ['weth', 'usd']),
-    ore: readNumberFromKeys(payload, ['ore', 'rore']),
+    rore: readNumberFromKeys(payload, ['rore', 'ore']),
   };
 }
 
@@ -142,7 +142,7 @@ export async function getStatsData(): Promise<StatsData | null> {
 
     return {
       wethPrice: pricesData.weth,
-      rorePrice: pricesData.ore * 0.95,
+      rorePrice: pricesData.rore,
       motherlode: motherlodeData,
       currentRound: {
         number: currentRoundData.round,

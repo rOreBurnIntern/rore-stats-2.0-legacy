@@ -46,7 +46,7 @@ export default function ProtocolStatCards({ statsData }: ProtocolStatCardsProps)
       <StatCard
         title="rORE"
         value={statsData ? formatFixed(statsData.rorePrice, 6) : '—'}
-        subtitle="Estimated as 95% of the ORE price feed."
+        subtitle="Current upstream rORE spot price in USD."
         isCurrency={true}
         loading={!statsData}
       />
