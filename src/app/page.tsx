@@ -4,6 +4,7 @@ import InteractiveBarChart from './components/InteractiveBarChart';
 import MotherlodeCard from './components/MotherlodeCard';
 import ProtocolStatCards from './components/ProtocolStatCards';
 import RoundCard from './components/RoundCard';
+import WinnerTypePieChart from './components/WinnerTypePieChart';
 import { waitForRequest } from './lib/request';
 import { getStatsData } from './lib/stats';
 
@@ -111,6 +112,13 @@ export default async function Home() {
             points={protocolChartPoints}
           />
         </div>
+      )}
+
+      {statsData?.winnerTypes && (
+        <WinnerTypePieChart
+          winnerTakeAll={statsData.winnerTypes.winnerTakeAll}
+          split={statsData.winnerTypes.split}
+        />
       )}
 
       {statsData?.motherlode && <MotherlodeCard {...statsData.motherlode} />}

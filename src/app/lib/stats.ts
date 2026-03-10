@@ -4,6 +4,10 @@ import { parseMotherlodeData, parseMotherlodeHistory, type MotherlodeHistoryPoin
 export interface StatsData {
   wethPrice: number;
   rorePrice: number;
+  winnerTypes?: {
+    winnerTakeAll: number;
+    split: number;
+  };
   motherlode: {
     totalValue: number;
     totalORELocked: number;
@@ -36,6 +40,29 @@ interface CurrentRoundApiResponse {
 const PRICES_API_URL = 'https://api.rore.supply/api/prices';
 const MOTHERLODE_API_URL = 'https://api.rore.supply/api/motherlode';
 const ROUND_API_URL = 'https://api.rore.supply/api/rounds/current';
+const WINNER_TAKE_ALL_KEYS = [
+  'winnerTakeAll',
+  'winner_take_all',
+  'winnerTakeAllCount',
+  'winner_take_all_count',
+  'winnerTakeAllRounds',
+  'winner_take_all_rounds',
+  'winnerTakeAllWins',
+  'winner_take_all_wins',
+  'takeAll',
+  'take_all',
+  'wta',
+];
+const SPLIT_KEYS = ['split', 'splitCount', 'split_count', 'splitRounds', 'split_rounds', 'splitWins', 'split_wins'];
+const WINNER_TYPE_CONTAINER_KEYS = [
+  'winnerTypes',
+  'winnerTypeCounts',
+  'winnerTypeSummary',
+  'winnerTypeBreakdown',
+  'winner_types',
+];
+const WINNER_TYPE_LABEL_KEYS = ['type', 'name', 'label', 'key'];
+const WINNER_TYPE_VALUE_KEYS = ['count', 'value', 'total', 'rounds', 'wins'];
 const REQUEST_INIT: RequestInit & { next: { revalidate: number } } = {
   headers: {
     Accept: 'application/json',
@@ -85,6 +112,26 @@ function readNumberFromKeys(source: Record<string, unknown>, keys: string[]): nu
   throw new Error(`Invalid numeric fields: ${keys.join(', ')}`);
 }
 
+function readOptionalNumberFromKeys(source: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim() !== '') {
+      const parsedValue = Number(value);
+
+      if (Number.isFinite(parsedValue)) {
+        return parsedValue;
+      }
+    }
+  }
+
+  return null;
+}
+
 function readString(source: Record<string, unknown>, key: string): string {
   const value = source[key];
 
@@ -93,6 +140,118 @@ function readString(source: Record<string, unknown>, key: string): string {
   }
 
   throw new Error(`Invalid string field: ${key}`);
+}
+
+function readOptionalStringFromKeys(source: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (typeof value === 'string' && value.trim() !== '') {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function buildWinnerTypes(
+  winnerTakeAll: number | null,
+  split: number | null
+): StatsData['winnerTypes'] | undefined {
+  if (winnerTakeAll === null && split === null) {
+    return undefined;
+  }
+
+  const normalizedWinnerTakeAll = Math.max(winnerTakeAll ?? 0, 0);
+  const normalizedSplit = Math.max(split ?? 0, 0);
+
+  if (normalizedWinnerTakeAll === 0 && normalizedSplit === 0) {
+    return undefined;
+  }
+
+  return {
+    winnerTakeAll: normalizedWinnerTakeAll,
+    split: normalizedSplit,
+  };
+}
+
+function normalizeWinnerType(value: string): 'winnerTakeAll' | 'split' | null {
+  const normalizedValue = value.toLowerCase().replace(/[^a-z]/g, '');
+
+  if (normalizedValue.includes('winnertakeall') || normalizedValue.includes('takeall') || normalizedValue === 'wta') {
+    return 'winnerTakeAll';
+  }
+
+  if (normalizedValue.includes('split')) {
+    return 'split';
+  }
+
+  return null;
+}
+
+function parseWinnerTypes(payload: unknown): StatsData['winnerTypes'] | undefined {
+  if (!isRecord(payload)) {
+    return undefined;
+  }
+
+  const directWinnerTypes = buildWinnerTypes(
+    readOptionalNumberFromKeys(payload, WINNER_TAKE_ALL_KEYS),
+    readOptionalNumberFromKeys(payload, SPLIT_KEYS)
+  );
+
+  if (directWinnerTypes) {
+    return directWinnerTypes;
+  }
+
+  for (const key of WINNER_TYPE_CONTAINER_KEYS) {
+    const container = payload[key];
+
+    if (Array.isArray(container)) {
+      let winnerTakeAll: number | null = null;
+      let split: number | null = null;
+
+      for (const entry of container) {
+        if (!isRecord(entry)) {
+          continue;
+        }
+
+        const winnerType = readOptionalStringFromKeys(entry, WINNER_TYPE_LABEL_KEYS);
+        const count = readOptionalNumberFromKeys(entry, WINNER_TYPE_VALUE_KEYS);
+
+        if (!winnerType || count === null) {
+          continue;
+        }
+
+        const normalizedWinnerType = normalizeWinnerType(winnerType);
+
+        if (normalizedWinnerType === 'winnerTakeAll') {
+          winnerTakeAll = count;
+        }
+
+        if (normalizedWinnerType === 'split') {
+          split = count;
+        }
+      }
+
+      const parsedWinnerTypes = buildWinnerTypes(winnerTakeAll, split);
+
+      if (parsedWinnerTypes) {
+        return parsedWinnerTypes;
+      }
+
+      continue;
+    }
+
+    if (isRecord(container)) {
+      const parsedWinnerTypes = parseWinnerTypes(container);
+
+      if (parsedWinnerTypes) {
+        return parsedWinnerTypes;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function parsePricesData(payload: unknown): PricesApiResponse {
@@ -139,6 +298,7 @@ export async function getStatsData(): Promise<StatsData | null> {
     ]);
     const pricesData = parsePricesData(pricesPayload);
     const currentRoundData = parseCurrentRoundData(currentRoundPayload);
+    const winnerTypes = parseWinnerTypes(currentRoundPayload);
     const motherlodeData = parseMotherlodeData(motherlodePayload, currentRoundPayload);
     const motherlodeHistory = parseMotherlodeHistory(
       motherlodePayload,
@@ -152,6 +312,7 @@ export async function getStatsData(): Promise<StatsData | null> {
     return {
       wethPrice: pricesData.weth,
       rorePrice: pricesData.rore,
+      ...(winnerTypes ? { winnerTypes } : {}),
       motherlode,
       currentRound: {
         number: currentRoundData.round,

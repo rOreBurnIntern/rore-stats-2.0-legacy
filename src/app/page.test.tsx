@@ -8,6 +8,7 @@ import InteractiveBarChart from './components/InteractiveBarChart';
 import MotherlodeCard from './components/MotherlodeCard';
 import ProtocolStatCards from './components/ProtocolStatCards';
 import StatCard from './components/StatCard';
+import WinnerTypePieChart from './components/WinnerTypePieChart';
 
 const originalFetch = global.fetch;
 const originalDateNow = Date.now;
@@ -78,6 +79,10 @@ test('renders stats from the upstream data sources during prerender', async () =
         prize: 777,
         entries: 88,
         endTime,
+        winnerTypes: {
+          winnerTakeAll: 9,
+          split: 3,
+        },
       }),
       {
         headers: {
@@ -110,8 +115,13 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /88<\/p><span[^>]*>Users<\/span>/);
   assert.match(markup, /Market Snapshot/);
   assert.match(markup, /Protocol Snapshot/);
+  assert.match(markup, /Winner Types/);
+  assert.match(markup, /Winner Take All/);
+  assert.match(markup, /Split/);
+  assert.match(markup, /12 total rounds/);
   assert.match(markup, /Burncoin signal board/);
   assert.match(markup, /Burncoin spread/);
+  assert.match(markup, /Burncoin outcomes/);
   assert.match(markup, /Burncoin reserves/);
   assert.match(markup, /Motherlode Over Time/);
   assert.match(markup, /Recent total value history in WETH\./);
@@ -120,6 +130,7 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /dashboard-chip/);
   assert.match(markup, /aria-label="Motherlode over time line chart"/);
   assert.match(markup, /aria-label="Motherlode total value over time"/);
+  assert.match(markup, /aria-label="Winner type pie chart for Winner Take All and Split rounds"/);
   assert.match(markup, /R10/);
   assert.match(markup, /R12/);
   assert.match(markup, /aria-label="Market snapshot bar chart for WETH\/USD and rORE prices"/);
@@ -213,6 +224,17 @@ test('renders interactive chart bars with hover detail content', () => {
   assert.match(markup, /role="tooltip"/);
   assert.match(markup, /dashboard-chart-note/);
   assert.match(markup, /Hover or focus a bar for exact values\./);
+});
+
+test('renders winner type pie chart legend and totals', () => {
+  const markup = renderToStaticMarkup(<WinnerTypePieChart winnerTakeAll={9} split={3} />);
+
+  assert.match(markup, /Winner type pie chart for Winner Take All and Split rounds/);
+  assert.match(markup, /Winner Types/);
+  assert.match(markup, /12 total rounds/);
+  assert.match(markup, /9 rounds \/ 75%/);
+  assert.match(markup, /3 rounds \/ 25%/);
+  assert.match(markup, /conic-gradient/);
 });
 
 test('renders protocol stat cards for Motherlode, WETH, and rORE', () => {
