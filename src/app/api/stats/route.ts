@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+/* v2.0.0 */ import { NextResponse } from 'next/server';
 import { withCors } from '../../lib/cors';
 import { getStatsData } from '../../lib/stats';
 
