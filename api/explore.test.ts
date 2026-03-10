@@ -57,6 +57,9 @@ test('returns the upstream explore payload through the Vercel API handler', asyn
 
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.body, payload);
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET, POST, PUT, DELETE, OPTIONS');
+  assert.equal(response.headers['Access-Control-Allow-Headers'], 'Content-Type');
   assert.equal(response.headers['Content-Type'], 'application/json');
   assert.equal(requestedUrl, 'https://api.rore.supply/api/explore?page=2&limit=25&sort=desc');
   assert.deepEqual(requestedInit, {
@@ -105,6 +108,7 @@ test('returns 405 for unsupported methods without calling the upstream API', asy
   assert.equal(response.statusCode, 405);
   assert.deepEqual(response.body, { error: 'Method not allowed' });
   assert.equal(response.headers.Allow, 'GET');
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
 });
 
 test('returns a 500 response when the upstream API fails', async () => {
@@ -118,5 +122,26 @@ test('returns a 500 response when the upstream API fails', async () => {
 
   assert.equal(response.statusCode, 500);
   assert.deepEqual(response.body, { error: 'Failed to fetch explore data' });
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
   assert.equal(response.headers['Content-Type'], 'application/json');
+});
+
+test('returns CORS headers for preflight requests', async () => {
+  let fetchCalled = false;
+
+  mockFetch(async () => {
+    fetchCalled = true;
+    return new Response();
+  });
+
+  const response = createResponseRecorder();
+
+  await handler({ method: 'OPTIONS' }, response);
+
+  assert.equal(fetchCalled, false);
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.body, {});
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET, POST, PUT, DELETE, OPTIONS');
+  assert.equal(response.headers['Access-Control-Allow-Headers'], 'Content-Type');
 });

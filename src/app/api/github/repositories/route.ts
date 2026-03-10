@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { withCors } from '../../../lib/cors';
 
 type CreateRepositoryRequest = {
   autoInit?: boolean;
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
   const token = process.env.GITHUB_TOKEN;
 
   if (!token) {
-    return NextResponse.json(MISSING_TOKEN_RESPONSE, { status: 500 });
+    return withCors(NextResponse.json(MISSING_TOKEN_RESPONSE, { status: 500 }));
   }
 
   let body: CreateRepositoryRequest & { name?: unknown };
@@ -42,11 +43,11 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(INVALID_BODY_RESPONSE, { status: 400 });
+    return withCors(NextResponse.json(INVALID_BODY_RESPONSE, { status: 400 }));
   }
 
   if (typeof body.name !== 'string' || body.name.trim().length === 0) {
-    return NextResponse.json(INVALID_BODY_RESPONSE, { status: 400 });
+    return withCors(NextResponse.json(INVALID_BODY_RESPONSE, { status: 400 }));
   }
 
   const name = body.name.trim();
@@ -74,16 +75,20 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => null);
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: getErrorMessage(errorPayload) ?? GENERIC_ERROR_RESPONSE.error },
         { status: response.status }
-      );
+      ));
     }
 
     const payload = await response.json();
-    return NextResponse.json(payload, { status: 201 });
+    return withCors(NextResponse.json(payload, { status: 201 }));
   } catch (error) {
     console.error('Error creating GitHub repository:', error);
-    return NextResponse.json(GENERIC_ERROR_RESPONSE, { status: 500 });
+    return withCors(NextResponse.json(GENERIC_ERROR_RESPONSE, { status: 500 }));
   }
+}
+
+export function OPTIONS() {
+  return withCors(NextResponse.json({}));
 }

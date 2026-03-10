@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { POST } from './route';
+import { OPTIONS, POST } from './route';
 
 const originalFetch = global.fetch;
 const originalConsoleError = console.error;
@@ -54,6 +54,9 @@ test('creates a private user repository by default', async () => {
     html_url: 'https://github.com/openclaw/example-repo',
     private: true,
   });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(response.headers.get('Access-Control-Allow-Methods'), 'GET, POST, PUT, DELETE, OPTIONS');
+  assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'Content-Type');
   assert.equal(requestedUrl, 'https://api.github.com/user/repos');
   assert.deepEqual(requestedInit, {
     body: JSON.stringify({
@@ -111,6 +114,7 @@ test('rejects requests without a repository name', async () => {
 
   assert.equal(response.status, 400);
   assert.deepEqual(await response.json(), { error: 'Repository name is required' });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
 });
 
 test('returns a 500 response when the GitHub token is missing', async () => {
@@ -125,6 +129,7 @@ test('returns a 500 response when the GitHub token is missing', async () => {
 
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'GitHub token is not configured' });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
 });
 
 test('forwards GitHub API validation errors', async () => {
@@ -142,6 +147,7 @@ test('forwards GitHub API validation errors', async () => {
 
   assert.equal(response.status, 422);
   assert.deepEqual(await response.json(), { error: 'Repository creation failed' });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
 });
 
 test('returns a 500 response when the GitHub request throws', async () => {
@@ -161,4 +167,14 @@ test('returns a 500 response when the GitHub request throws', async () => {
 
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to create GitHub repository' });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+});
+
+test('returns CORS headers for preflight requests', () => {
+  const response = OPTIONS();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(response.headers.get('Access-Control-Allow-Methods'), 'GET, POST, PUT, DELETE, OPTIONS');
+  assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'Content-Type');
 });

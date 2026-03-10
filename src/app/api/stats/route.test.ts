@@ -110,6 +110,7 @@ test('returns a 500 response when aggregation fails', async () => {
 
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to aggregate stats from rORE API' });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
 });
 
 test('returns a 500 response when the motherlode payload is invalid', async () => {

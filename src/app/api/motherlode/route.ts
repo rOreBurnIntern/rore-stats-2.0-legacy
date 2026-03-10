@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { withCors } from '../../lib/cors';
 
 const MOTHERLODE_API_URL = 'https://api.rore.supply/api/motherlode';
 const ERROR_RESPONSE = { error: 'Failed to fetch motherlode data' };
@@ -17,9 +18,13 @@ export async function GET() {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    return withCors(NextResponse.json(data));
   } catch (error) {
     console.error('Error fetching motherlode:', error);
-    return NextResponse.json(ERROR_RESPONSE, { status: 500 });
+    return withCors(NextResponse.json(ERROR_RESPONSE, { status: 500 }));
   }
+}
+
+export function OPTIONS() {
+  return withCors(NextResponse.json({}));
 }

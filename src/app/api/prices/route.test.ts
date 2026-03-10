@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { GET } from './route';
+import { GET, OPTIONS } from './route';
 
 const originalFetch = global.fetch;
 const originalConsoleError = console.error;
@@ -36,6 +36,9 @@ test('returns the upstream prices payload', async () => {
 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), payload);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(response.headers.get('Access-Control-Allow-Methods'), 'GET, POST, PUT, DELETE, OPTIONS');
+  assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'Content-Type');
   assert.equal(requestedUrl, 'https://api.rore.supply/api/prices');
   assert.deepEqual(requestedInit, {
     cache: 'no-store',
@@ -54,6 +57,7 @@ test('returns a 500 response when the upstream API fails', async () => {
 
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to fetch prices' });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
 });
 
 test('returns a 500 response when the fetch throws', async () => {
@@ -67,4 +71,14 @@ test('returns a 500 response when the fetch throws', async () => {
 
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to fetch prices' });
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+});
+
+test('returns CORS headers for preflight requests', () => {
+  const response = OPTIONS();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(response.headers.get('Access-Control-Allow-Methods'), 'GET, POST, PUT, DELETE, OPTIONS');
+  assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'Content-Type');
 });
