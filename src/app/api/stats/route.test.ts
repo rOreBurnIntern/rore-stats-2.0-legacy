@@ -304,6 +304,62 @@ test('returns a 500 response when the motherlode payload is invalid', async () =
   assert.deepEqual(await response.json(), { error: 'Failed to aggregate stats from rORE API' });
 });
 
+test('calculates the motherlode totalValue from the current round when the upstream payload omits it', async () => {
+  Date.now = () => 1_741_525_600_000;
+
+  let requestCount = 0;
+  mockFetch(async () => {
+    requestCount += 1;
+
+    if (requestCount === 1) {
+      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), { status: 200 });
+    }
+
+    if (requestCount === 2) {
+      return new Response(
+        JSON.stringify({
+          lastHitRound: 12,
+          totalORELocked: 8910,
+          participants: 42,
+        }),
+        { status: 200 }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        round: 15,
+        status: 'active',
+        prize: 999,
+        entries: 77,
+        endTime: 1_741_526_200_000,
+      }),
+      { status: 200 }
+    );
+  });
+
+  const response = await GET();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    wethPrice: 1234.56,
+    rorePrice: 0.8,
+    motherlode: {
+      totalValue: 0.6,
+      totalORELocked: 8910,
+      participants: 42,
+    },
+    currentRound: {
+      number: 15,
+      status: 'active',
+      prize: 999,
+      entries: 77,
+      endTime: 1_741_526_200_000,
+    },
+    lastUpdated: 1_741_525_600_000,
+  });
+});
+
 test('returns a 500 response when the round payload is invalid', async () => {
   console.error = () => {};
 

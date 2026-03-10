@@ -21,12 +21,12 @@ test('returns the upstream motherlode payload', async () => {
     totalORELocked: 43210,
     participants: 246,
   };
-  let requestedUrl = '';
-  let requestedInit: RequestInit | undefined;
+  const requestedUrls: string[] = [];
+  const requestedInits: Array<RequestInit | undefined> = [];
 
   mockFetch(async (input, init) => {
-    requestedUrl = input.toString();
-    requestedInit = init;
+    requestedUrls.push(input.toString());
+    requestedInits.push(init);
 
     return new Response(JSON.stringify(payload), {
       headers: {
@@ -47,13 +47,62 @@ test('returns the upstream motherlode payload', async () => {
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
   assert.equal(response.headers.get('Access-Control-Allow-Methods'), 'GET, POST, PUT, DELETE, OPTIONS');
   assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'Content-Type');
-  assert.equal(requestedUrl, 'https://api.rore.supply/api/motherlode');
-  assert.deepEqual(requestedInit, {
+  assert.deepEqual(requestedUrls, ['https://api.rore.supply/api/motherlode']);
+  assert.deepEqual(requestedInits[0], {
     cache: 'no-store',
     headers: {
       Accept: 'application/json',
     },
   });
+});
+
+test('calculates the motherlode totalValue from round progress when the upstream payload omits it', async () => {
+  const requestedUrls: string[] = [];
+
+  mockFetch(async (input) => {
+    requestedUrls.push(input.toString());
+
+    if (requestedUrls.length === 1) {
+      return new Response(
+        JSON.stringify({
+          lastHitRound: 12,
+          totalORELocked: 43210,
+          participants: 246,
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        round: 15,
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
+  });
+
+  const response = await GET();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    totalValue: 0.6,
+    totalORELocked: 43210,
+    participants: 246,
+  });
+  assert.deepEqual(requestedUrls, [
+    'https://api.rore.supply/api/motherlode',
+    'https://api.rore.supply/api/rounds/current',
+  ]);
 });
 
 test('returns a 500 response when the upstream motherlode API fails', async () => {

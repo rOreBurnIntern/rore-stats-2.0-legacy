@@ -137,8 +137,8 @@ export async function getStatsData(): Promise<StatsData | null> {
       fetchJson(ROUND_API_URL),
     ]);
     const pricesData = parsePricesData(pricesPayload);
-    const motherlodeData = parseMotherlodeData(motherlodePayload);
     const currentRoundData = parseCurrentRoundData(currentRoundPayload);
+    const motherlodeData = parseMotherlodeData(motherlodePayload, currentRoundPayload);
 
     return {
       wethPrice: pricesData.weth,
