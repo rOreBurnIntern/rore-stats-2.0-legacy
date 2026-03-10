@@ -113,8 +113,7 @@ test('renders mobile overflow safeguards in the page shell', async () => {
 
   const markup = renderToStaticMarkup(await Home());
 
-  assert.match(markup, /class="[^"]*app-shell[^"]*min-h-screen[^"]*overflow-x-auto[^"]*bg-base-200[^"]*"/);
-  assert.match(markup, /<main class="[^"]*max-w-7xl[^"]*min-w-0[^"]*"/);
+  assert.match(markup, /class="[^"]*flex[^"]*flex-col[^"]*gap-8[^"]*"/);
   assert.match(markup, /class="[^"]*dashboard-panel[^"]*navbar[^"]*"/);
   assert.match(markup, /class="[^"]*dashboard-alert[^"]*alert[^"]*"/);
 });
@@ -183,8 +182,7 @@ test('renders interactive chart bars with hover detail content', () => {
 test('renders loading state while the dashboard is fetching', () => {
   const markup = renderToStaticMarkup(<Loading />);
 
-  assert.match(markup, /class="[^"]*app-shell[^"]*min-h-screen[^"]*overflow-x-auto[^"]*bg-base-200[^"]*"/);
-  assert.match(markup, /class="[^"]*hero[^"]*min-h-screen[^"]*"/);
-  assert.match(markup, /class="[^"]*dashboard-muted[^"]*text-lg[^"]*"/);
+  assert.match(markup, /class="[^"]*min-h-\[50vh\][^"]*items-center[^"]*justify-center[^"]*"/);
+  assert.match(markup, /class="[^"]*dashboard-muted[^"]*text-lg[^"]*font-medium[^"]*"/);
   assert.match(markup, /Loading\.\.\./);
 });

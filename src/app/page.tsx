@@ -86,8 +86,7 @@ export default async function Home() {
     : [];
 
   return (
-    <div className="app-shell flex min-h-screen flex-col overflow-x-auto bg-base-200 font-sans">
-      <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-8 px-4 py-8">
+    <div className="flex flex-col gap-8">
         <DashboardHeader lastUpdatedAt={lastUpdatedAt} />
 
         {!statsData && (
@@ -153,9 +152,6 @@ export default async function Home() {
             timeRemaining={getTimeRemaining(statsData.currentRound.endTime, statsData.lastUpdated)}
           />
         )}
-
-        <div className="dashboard-footer mt-12 text-center text-sm">Data sourced from rORE Protocol API</div>
-      </main>
     </div>
   );
 }

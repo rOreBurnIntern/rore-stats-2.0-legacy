@@ -15,4 +15,9 @@ test('applies the DaisyUI theme to the root layout', () => {
   assert.match(layoutSource, /href="\/vendor\/daisyui\/themes\.css"/);
   assert.match(layoutSource, /href="\/vendor\/daisyui\/styled\.css"/);
   assert.match(layoutSource, /<body className="bg-base-200 text-base-content antialiased">/);
+  assert.match(layoutSource, /className="app-shell flex min-h-screen flex-col overflow-x-auto bg-base-200 font-sans"/);
+  assert.match(layoutSource, /<header className="border-b border-white\/10">/);
+  assert.match(layoutSource, /<main className="flex-1">/);
+  assert.match(layoutSource, /<footer className="dashboard-footer border-t border-white\/10">/);
+  assert.match(layoutSource, /Data sourced from rORE Protocol API/);
 });
