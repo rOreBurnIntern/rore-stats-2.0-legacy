@@ -450,7 +450,7 @@ async function fetchJson(url: string): Promise<unknown> {
   return response.json();
 }
 
-export export async function getStatsData(): Promise<StatsData | null> {
+export async function getStatsData(): Promise<StatsData | null> {
   try {
     // Fetch prices (this endpoint always works) - add timeout
     const pricesData = await fetch(PRICES_API_URL, { signal: AbortSignal.timeout(5000) });
