@@ -80,11 +80,11 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /\$3210\.45/);
   assert.match(markup, /\$0\.654321/);
   assert.match(markup, /\$98,765/);
-  assert.match(markup, /43,210/);
+  assert.match(markup, /43,210<\/p><span[^>]*>ORE<\/span>/);
   assert.match(markup, /246/);
   assert.match(markup, /Current Round #12/);
-  assert.match(markup, /777/);
-  assert.match(markup, /88/);
+  assert.match(markup, /777<\/p><span[^>]*>rORE<\/span>/);
+  assert.match(markup, /88<\/p><span[^>]*>Users<\/span>/);
   assert.match(markup, new RegExp(`id="last-update">${new Date(lastUpdated).toLocaleTimeString()}<\\/span>`));
 });
 

@@ -22,7 +22,7 @@ export default function MotherlodeCard({ totalValue, totalORELocked, participant
         <StatCard 
           title="ORE Locked" 
           value={totalORELocked !== null ? totalORELocked.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—'} 
-          subtitle="ORE" 
+          valueLabel="ORE" 
         />
         <StatCard 
           title="Participants" 

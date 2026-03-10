@@ -26,12 +26,12 @@ export default function RoundCard({ number, status, prize, entries, endTime, tim
         <StatCard 
           title="Prize Pool" 
           value={prize !== null ? prize.toLocaleString() : '—'} 
-          subtitle="rORE" 
+          valueLabel="rORE" 
         />
         <StatCard 
           title="Total Entries" 
           value={entries !== null ? entries.toLocaleString() : '—'} 
-          subtitle="Users" 
+          valueLabel="Users" 
         />
         <StatCard 
           title="Time Remaining" 
