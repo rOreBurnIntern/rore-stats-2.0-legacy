@@ -95,6 +95,8 @@ test('renders fallback UI when the stats request fails', async () => {
 
   const markup = renderToStaticMarkup(await Home());
 
+  assert.match(markup, /role="alert"/);
+  assert.match(markup, /We could not load the latest stats right now\. Please try again in a few minutes\./);
   assert.match(markup, /id="last-update">N\/A<\/span>/);
   assert.doesNotMatch(markup, /Current Round #/);
 });
