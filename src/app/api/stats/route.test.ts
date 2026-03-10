@@ -172,6 +172,96 @@ test('accepts usd and rore aliases from the upstream prices payload', async () =
   });
 });
 
+test('includes motherlode history when the upstream payload provides it', async () => {
+  Date.now = () => 1_741_525_600_000;
+
+  let requestCount = 0;
+  mockFetch(async () => {
+    requestCount += 1;
+
+    if (requestCount === 1) {
+      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      });
+    }
+
+    if (requestCount === 2) {
+      return new Response(
+        JSON.stringify({
+          totalValue: '1234500000000000000',
+          totalORELocked: 8910,
+          participants: 42,
+          history: [
+            {
+              label: 'R5',
+              totalValue: '600000000000000000',
+            },
+            {
+              label: 'R6',
+              totalValue: '900000000000000000',
+            },
+            {
+              label: 'R7',
+              totalValue: '1234500000000000000',
+            },
+          ],
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        round: 7,
+        status: 'active',
+        prize: 999,
+        entries: 77,
+        endTime: 1_741_526_200_000,
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
+  });
+
+  const response = await GET();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    wethPrice: 1234.56,
+    rorePrice: 0.8,
+    motherlode: {
+      totalValue: 1.2345,
+      totalORELocked: 8910,
+      participants: 42,
+      history: [
+        { label: 'R5', value: 0.6 },
+        { label: 'R6', value: 0.9 },
+        { label: 'R7', value: 1.2345 },
+      ],
+    },
+    currentRound: {
+      number: 7,
+      status: 'active',
+      prize: 999,
+      entries: 77,
+      endTime: 1_741_526_200_000,
+    },
+    lastUpdated: 1_741_525_600_000,
+  });
+});
+
 test('falls back to the ore field when the upstream rORE price is unavailable', async () => {
   Date.now = () => 1_741_525_600_000;
 
@@ -348,6 +438,12 @@ test('calculates the motherlode totalValue from the current round when the upstr
       totalValue: 0.6,
       totalORELocked: 8910,
       participants: 42,
+      history: [
+        { label: 'R12', value: 0 },
+        { label: 'R13', value: 0.2 },
+        { label: 'R14', value: 0.4 },
+        { label: 'R15', value: 0.6 },
+      ],
     },
     currentRound: {
       number: 15,

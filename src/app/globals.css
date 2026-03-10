@@ -264,6 +264,51 @@ body {
   transform: translate(-50%, 0);
 }
 
+.motherlode-trend__frame {
+  border: 1px solid rgba(255, 150, 64, 0.16);
+  border-radius: 1rem;
+  background: rgba(255, 138, 42, 0.05);
+  padding: 1rem;
+}
+
+.motherlode-trend__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.motherlode-trend__grid line {
+  stroke: rgba(255, 168, 89, 0.14);
+  stroke-width: 1;
+}
+
+.motherlode-trend__line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.motherlode-trend__dot {
+  fill: var(--accent-strong);
+  stroke: rgba(20, 10, 5, 0.96);
+  stroke-width: 2;
+}
+
+.motherlode-trend__labels {
+  margin-top: 0.85rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(3.75rem, 1fr));
+  gap: 0.5rem;
+}
+
+.motherlode-trend__label {
+  min-width: 0;
+  text-align: center;
+}
+
 @media (max-width: 640px) {
   .interactive-chart {
     min-height: 16rem;

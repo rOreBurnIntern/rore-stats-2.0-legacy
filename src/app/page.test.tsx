@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import Loading from './loading';
 import Home from './page';
 import InteractiveBarChart from './components/InteractiveBarChart';
+import MotherlodeCard from './components/MotherlodeCard';
 import ProtocolStatCards from './components/ProtocolStatCards';
 import StatCard from './components/StatCard';
 
@@ -46,6 +47,20 @@ test('renders stats from the upstream data sources during prerender', async () =
           totalValue: '1234500000000000000',
           totalORELocked: 43210,
           participants: 246,
+          history: [
+            {
+              label: 'R10',
+              totalValue: '800000000000000000',
+            },
+            {
+              label: 'R11',
+              totalValue: '1000000000000000000',
+            },
+            {
+              label: 'R12',
+              totalValue: '1234500000000000000',
+            },
+          ],
         }),
         {
           headers: {
@@ -98,9 +113,15 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /Burncoin signal board/);
   assert.match(markup, /Burncoin spread/);
   assert.match(markup, /Burncoin reserves/);
+  assert.match(markup, /Motherlode Over Time/);
+  assert.match(markup, /Recent total value history in WETH\./);
   assert.match(markup, /Burncoin countdown/);
   assert.match(markup, /Hover or focus a bar for exact values\./);
   assert.match(markup, /dashboard-chip/);
+  assert.match(markup, /aria-label="Motherlode over time line chart"/);
+  assert.match(markup, /aria-label="Motherlode total value over time"/);
+  assert.match(markup, /R10/);
+  assert.match(markup, /R12/);
   assert.match(markup, /aria-label="Market snapshot bar chart for WETH\/USD and rORE prices"/);
   assert.match(markup, /aria-label="Protocol snapshot bar chart for Motherlode and round metrics"/);
   assert.match(markup, /aria-label="Amount: 1\.2345 WETH\. Total WETH currently locked in Motherlode\."/);
@@ -225,6 +246,18 @@ test('renders protocol stat cards for Motherlode, WETH, and rORE', () => {
   assert.match(markup, /Current upstream WETH spot price in USD\./);
   assert.match(markup, />rORE</);
   assert.match(markup, /Current upstream rORE spot price in USD\./);
+});
+
+test('renders a motherlode history fallback when upstream history is unavailable', () => {
+  const markup = renderToStaticMarkup(
+    <MotherlodeCard
+      totalValue={1.2345}
+      totalORELocked={43210}
+      participants={246}
+    />
+  );
+
+  assert.match(markup, /Motherlode history is not available from the upstream payload yet\./);
 });
 
 test('renders loading state while the dashboard is fetching', () => {

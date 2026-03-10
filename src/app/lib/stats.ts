@@ -1,5 +1,5 @@
 import { logError } from './log';
-import { parseMotherlodeData } from './motherlode';
+import { parseMotherlodeData, parseMotherlodeHistory, type MotherlodeHistoryPoint } from './motherlode';
 
 export interface StatsData {
   wethPrice: number;
@@ -8,6 +8,7 @@ export interface StatsData {
     totalValue: number;
     totalORELocked: number;
     participants: number;
+    history?: MotherlodeHistoryPoint[];
   };
   currentRound: {
     number: number;
@@ -139,11 +140,19 @@ export async function getStatsData(): Promise<StatsData | null> {
     const pricesData = parsePricesData(pricesPayload);
     const currentRoundData = parseCurrentRoundData(currentRoundPayload);
     const motherlodeData = parseMotherlodeData(motherlodePayload, currentRoundPayload);
+    const motherlodeHistory = parseMotherlodeHistory(
+      motherlodePayload,
+      currentRoundPayload,
+      motherlodeData.totalValue
+    );
+    const motherlode = motherlodeHistory.length > 0
+      ? { ...motherlodeData, history: motherlodeHistory }
+      : motherlodeData;
 
     return {
       wethPrice: pricesData.weth,
       rorePrice: pricesData.rore,
-      motherlode: motherlodeData,
+      motherlode,
       currentRound: {
         number: currentRoundData.round,
         status: currentRoundData.status,
