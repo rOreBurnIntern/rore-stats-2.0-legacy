@@ -1,5 +1,5 @@
 import { logError } from './log';
-import { parseMotherlodeData, parseMotherlodeHistory, type MotherlodeHistoryPoint } from './motherlode';
+import { parseMotherlodeData, parseMotherlodeHistory, type MotherlodeHistoryPoint, type MotherlodeApiResponse } from './motherlode';
 
 export interface StatsData {
   wethPrice: number;
@@ -44,6 +44,7 @@ interface CurrentRoundApiResponse {
 const PRICES_API_URL = 'https://api.rore.supply/api/prices';
 const MOTHERLODE_API_URL = 'https://api.rore.supply/api/motherlode';
 const ROUND_API_URL = 'https://api.rore.supply/api/rounds/current';
+const EXPLORE_API_URL = 'https://api.rore.supply/api/explore';
 const WINNER_TAKE_ALL_KEYS = [
   'winnerTakeAll',
   'winner_take_all',

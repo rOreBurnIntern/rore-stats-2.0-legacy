@@ -179,6 +179,103 @@ test('renders mobile overflow safeguards in the page shell', async () => {
   assert.match(markup, /class="[^"]*dashboard-alert[^"]*alert[^"]*"/);
 });
 
+test('renders responsive layouts for dashboard features on mobile and desktop', async () => {
+  const lastUpdated = Date.parse('2026-03-09T12:34:56.000Z');
+  const endTime = lastUpdated + 10 * 60 * 1000;
+  Date.now = () => lastUpdated;
+
+  global.fetch = async (input) => {
+    if (input.toString() === 'https://api.rore.supply/api/prices') {
+      return new Response(
+        JSON.stringify({
+          weth: 3210.45,
+          rore: 0.688758947368421,
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    if (input.toString() === 'https://api.rore.supply/api/motherlode') {
+      return new Response(
+        JSON.stringify({
+          totalValue: '1234500000000000000',
+          totalORELocked: 43210,
+          participants: 246,
+          history: [
+            {
+              label: 'R10',
+              totalValue: '800000000000000000',
+              timestamp: Date.parse('2026-03-07T12:34:56.000Z'),
+            },
+            {
+              label: 'R11',
+              totalValue: '1000000000000000000',
+              timestamp: Date.parse('2026-03-08T12:34:56.000Z'),
+            },
+            {
+              label: 'R12',
+              totalValue: '1234500000000000000',
+              timestamp: Date.parse('2026-03-09T12:34:56.000Z'),
+            },
+          ],
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        round: 12,
+        status: 'active',
+        prize: 777,
+        entries: 88,
+        endTime,
+        blockPerformance: {
+          1: 2,
+          3: 1,
+          25: 4,
+        },
+        winnerTypes: {
+          winnerTakeAll: 9,
+          split: 3,
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
+  };
+
+  const markup = renderToStaticMarkup(await Home());
+
+  assert.match(
+    markup,
+    /class="[^"]*dashboard-panel[^"]*navbar[^"]*flex[^"]*flex-col[^"]*sm:flex-row[^"]*sm:items-center[^"]*sm:justify-between[^"]*"/
+  );
+  assert.match(markup, /class="[^"]*grid[^"]*grid-cols-1[^"]*gap-6[^"]*md:grid-cols-3[^"]*"/);
+  assert.match(markup, /class="[^"]*grid[^"]*grid-cols-1[^"]*gap-6[^"]*xl:grid-cols-2[^"]*"/);
+  assert.match(markup, /class="[^"]*grid[^"]*grid-cols-1[^"]*gap-4[^"]*sm:grid-cols-3[^"]*"/);
+  assert.match(markup, /class="[^"]*grid[^"]*grid-cols-1[^"]*gap-4[^"]*sm:grid-cols-4[^"]*"/);
+  assert.match(markup, /class="interactive-chart"/);
+  assert.match(
+    markup,
+    /style="grid-template-columns:repeat\(25,\s*minmax\(2\.5rem,\s*1fr\)\);min-width:calc\(25 \* 2\.5rem\)"/
+  );
+});
+
 test('renders stat card content with wrapping classes for narrow screens', () => {
   const markup = renderToStaticMarkup(
     <StatCard
