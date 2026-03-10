@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withCors } from '../../../lib/cors';
+import { logError } from '../../../lib/log';
 
 type CreateRepositoryRequest = {
   autoInit?: boolean;
@@ -84,7 +85,11 @@ export async function POST(request: Request) {
     const payload = await response.json();
     return withCors(NextResponse.json(payload, { status: 201 }));
   } catch (error) {
-    console.error('Error creating GitHub repository:', error);
+    logError('Failed to create GitHub repository', error, {
+      organization: organization ?? null,
+      route: '/api/github/repositories',
+      upstreamUrl: getEndpoint(organization),
+    });
     return withCors(NextResponse.json(GENERIC_ERROR_RESPONSE, { status: 500 }));
   }
 }

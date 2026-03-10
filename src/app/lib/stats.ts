@@ -1,3 +1,5 @@
+import { logError } from './log';
+
 export interface StatsData {
   wethPrice: number;
   rorePrice: number;
@@ -149,7 +151,10 @@ export async function getStatsData(): Promise<StatsData | null> {
       lastUpdated: Date.now(),
     };
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    logError('Failed to aggregate stats from rORE API', error, {
+      route: '/api/stats',
+      upstreamUrls: [PRICES_API_URL, MOTHERLODE_API_URL, ROUND_API_URL],
+    });
     return null;
   }
 }

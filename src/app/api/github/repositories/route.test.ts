@@ -152,7 +152,12 @@ test('forwards GitHub API validation errors', async () => {
 
 test('returns a 500 response when the GitHub request throws', async () => {
   process.env.GITHUB_TOKEN = 'test-token';
-  console.error = () => {};
+  let loggedMessage = '';
+  let loggedPayload: Record<string, unknown> | undefined;
+  console.error = (message: unknown, payload: unknown) => {
+    loggedMessage = String(message);
+    loggedPayload = payload as Record<string, unknown>;
+  };
 
   global.fetch = async () => {
     throw new Error('network down');
@@ -168,6 +173,14 @@ test('returns a 500 response when the GitHub request throws', async () => {
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to create GitHub repository' });
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(loggedMessage, 'Failed to create GitHub repository');
+  assert.equal(loggedPayload?.organization, null);
+  assert.equal(loggedPayload?.route, '/api/github/repositories');
+  assert.equal(loggedPayload?.upstreamUrl, 'https://api.github.com/user/repos');
+  assert.equal(
+    (loggedPayload?.error as Record<string, unknown>).message,
+    'network down'
+  );
 });
 
 test('returns CORS headers for preflight requests', () => {

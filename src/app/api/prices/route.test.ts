@@ -49,7 +49,12 @@ test('returns the upstream prices payload', async () => {
 });
 
 test('returns a 500 response when the upstream API fails', async () => {
-  console.error = () => {};
+  let loggedMessage = '';
+  let loggedPayload: Record<string, unknown> | undefined;
+  console.error = (message: unknown, payload: unknown) => {
+    loggedMessage = String(message);
+    loggedPayload = payload as Record<string, unknown>;
+  };
 
   mockFetch(async () => new Response(null, { status: 503 }));
 
@@ -58,6 +63,13 @@ test('returns a 500 response when the upstream API fails', async () => {
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to fetch prices' });
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(loggedMessage, 'Failed to fetch prices');
+  assert.equal(loggedPayload?.route, '/api/prices');
+  assert.equal(loggedPayload?.upstreamUrl, 'https://api.rore.supply/api/prices');
+  assert.equal(
+    (loggedPayload?.error as Record<string, unknown>).message,
+    'HTTP error! status: 503'
+  );
 });
 
 test('returns a 500 response when the fetch throws', async () => {

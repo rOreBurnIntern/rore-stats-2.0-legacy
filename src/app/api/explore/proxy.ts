@@ -1,3 +1,5 @@
+import { logError } from '../../lib/log';
+
 export const EXPLORE_API_URL = 'https://api.rore.supply/api/explore';
 export const EXPLORE_ERROR_RESPONSE = { error: 'Failed to fetch explore data' };
 export const EXPLORE_REQUEST_INIT: RequestInit = {
@@ -55,8 +57,10 @@ export function buildExploreApiUrl(searchParams?: SearchParamsInput) {
 export async function getExploreProxyResponse(
   searchParams?: SearchParamsInput
 ): Promise<ProxyResponse> {
+  const upstreamUrl = buildExploreApiUrl(searchParams);
+
   try {
-    const res = await fetch(buildExploreApiUrl(searchParams), EXPLORE_REQUEST_INIT);
+    const res = await fetch(upstreamUrl, EXPLORE_REQUEST_INIT);
 
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
@@ -65,7 +69,10 @@ export async function getExploreProxyResponse(
     const data = await res.json();
     return { body: data, status: 200 };
   } catch (error) {
-    console.error('Error fetching explore data:', error);
+    logError('Failed to fetch explore data', error, {
+      route: '/api/explore',
+      upstreamUrl: upstreamUrl.toString(),
+    });
     return { body: EXPLORE_ERROR_RESPONSE, status: 500 };
   }
 }

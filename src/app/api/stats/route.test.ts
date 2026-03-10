@@ -102,7 +102,12 @@ test('returns aggregated stats with CORS headers', async () => {
 });
 
 test('returns a 500 response when aggregation fails', async () => {
-  console.error = () => {};
+  let loggedMessage = '';
+  let loggedPayload: Record<string, unknown> | undefined;
+  console.error = (message: unknown, payload: unknown) => {
+    loggedMessage = String(message);
+    loggedPayload = payload as Record<string, unknown>;
+  };
 
   mockFetch(async () => new Response(null, { status: 503 }));
 
@@ -111,6 +116,17 @@ test('returns a 500 response when aggregation fails', async () => {
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to aggregate stats from rORE API' });
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(loggedMessage, 'Failed to aggregate stats from rORE API');
+  assert.equal(loggedPayload?.route, '/api/stats');
+  assert.deepEqual(loggedPayload?.upstreamUrls, [
+    'https://api.rore.supply/api/prices',
+    'https://api.rore.supply/api/motherlode',
+    'https://api.rore.supply/api/rounds/current',
+  ]);
+  assert.equal(
+    (loggedPayload?.error as Record<string, unknown>).message,
+    'Request failed for https://api.rore.supply/api/prices: 503'
+  );
 });
 
 test('returns a 500 response when the motherlode payload is invalid', async () => {
