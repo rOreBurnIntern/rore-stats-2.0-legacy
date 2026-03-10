@@ -12,6 +12,8 @@
   "include": [
     "api/explore.ts",
     "api/explore.test.ts",
+    "api/motherlode.ts",
+    "api/motherlode.test.ts",
     "api/prices.ts",
     "api/prices.test.ts",
     "eslint.config.test.ts",
@@ -29,6 +31,7 @@
     "src/app/api/explore/route.test.ts",
     "src/app/api/github/repositories/route.ts",
     "src/app/api/github/repositories/route.test.ts",
+    "src/app/api/motherlode/proxy.ts",
     "src/app/api/motherlode/route.ts",
     "src/app/api/motherlode/route.test.ts",
     "src/app/api/rounds/route.ts",
