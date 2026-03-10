@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import Loading from './loading';
 import Home from './page';
+import StatCard from './components/StatCard';
 
 const originalFetch = global.fetch;
 const originalDateNow = Date.now;
@@ -101,8 +102,33 @@ test('renders fallback UI when the stats request fails', async () => {
   assert.doesNotMatch(markup, /Current Round #/);
 });
 
+test('renders mobile overflow safeguards in the page shell', async () => {
+  global.fetch = async () => new Response(null, { status: 500 });
+
+  const markup = renderToStaticMarkup(await Home());
+
+  assert.match(markup, /class="[^"]*min-h-screen[^"]*overflow-x-auto[^"]*"/);
+  assert.match(markup, /<main class="[^"]*max-w-7xl[^"]*min-w-0[^"]*"/);
+});
+
+test('renders stat card content with wrapping classes for narrow screens', () => {
+  const markup = renderToStaticMarkup(
+    <StatCard
+      title="Long Value"
+      value="123456789012345678901234567890"
+      valueLabel="rORE"
+      change="+99.99%"
+    />
+  );
+
+  assert.match(markup, /class="[^"]*w-full[^"]*min-w-0[^"]*"/);
+  assert.match(markup, /class="[^"]*flex[^"]*flex-wrap[^"]*gap-x-2[^"]*gap-y-1[^"]*"/);
+  assert.match(markup, /class="[^"]*break-words[^"]*text-2xl[^"]*"/);
+});
+
 test('renders loading state while the dashboard is fetching', () => {
   const markup = renderToStaticMarkup(<Loading />);
 
+  assert.match(markup, /class="[^"]*min-h-screen[^"]*overflow-x-auto[^"]*"/);
   assert.match(markup, /Loading\.\.\./);
 });

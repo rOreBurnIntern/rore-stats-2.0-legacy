@@ -20,8 +20,8 @@ export default async function Home() {
   const lastUpdatedLabel = lastUpdatedAt === null ? 'N/A' : formatTimeAgo(lastUpdatedAt, lastUpdatedAt);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-7xl flex-col gap-8 px-4 py-8 mx-auto">
+    <div className="flex min-h-screen flex-col overflow-x-auto bg-zinc-50 font-sans dark:bg-black">
+      <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-8 px-4 py-8">
         <DashboardHeader lastUpdatedAt={lastUpdatedAt} initialLastUpdatedLabel={lastUpdatedLabel} />
 
         {!statsData && (
