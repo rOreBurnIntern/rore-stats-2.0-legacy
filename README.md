@@ -1,6 +1,14 @@
-# rORE Stats Dashboard
+# rORE Stats Dashboard — v2 Rebuild (ARCHIVED / LEGACY)
 
-This is a [Next.js 14](https://nextjs.org) project for the rORE Protocol, initialized with Tailwind CSS and DaisyUI, providing real-time insights into protocol metrics including:
+> ⚠️ **SUPERSEDED** — This repository is archived and no longer maintained.
+>
+> This was a broken rebuild attempt (Next.js 14 + Vercel) that encountered persistent deployment and API issues.
+>
+> **The active project is [rORE-Stats-Dashboard-2.0](https://github.com/rOreBurnIntern/rORE-Stats-Dashboard-2.0).**
+
+---
+
+This was a [Next.js 14](https://nextjs.org) project for the rORE Protocol, initialized with Tailwind CSS and DaisyUI, providing real-time insights into protocol metrics including:
 
 - WETH and rORE token prices
 - Motherlode total locked value and participants
