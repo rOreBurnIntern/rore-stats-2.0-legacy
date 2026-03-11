@@ -436,13 +436,17 @@ function parseExploreData(payload: unknown): {
     throw new Error('Invalid explore payload');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payloadRecord = payload as any;
+
   // Parse protocolStats.motherlode (from wei to ORE)
-  const motherlodeWei = payload.protocolStats?.motherlode || payload.motherlode || '0';
-  const motherlodeOracle = readNumber(payload, 'motherlode') ?? 
+  const motherlodeWei = payloadRecord.protocolStats?.motherlode || payloadRecord.motherlode || '0';
+  const motherlodeOracle = readNumber(payloadRecord, 'motherlode') ?? 
     (typeof motherlodeWei === 'string' ? Number(motherlodeWei) / 1e18 : 0);
 
   // Get current round from roundsData[0]
-  const roundsArray = payload.roundsData || payload.rounds || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const roundsArray: any[] = payloadRecord.roundsData || payloadRecord.rounds || [];
   const currentRound = roundsArray[0] || {};
   const roundsList = roundsArray.map((r: any) => ({
     roundId: r.roundId,
@@ -453,15 +457,15 @@ function parseExploreData(payload: unknown): {
   }));
 
   // Parse block performance from protocolStats or roundsData
-  const blockPerformance = parseBlockPerformance(payload.protocolStats || payload);
+  const blockPerformance = parseBlockPerformance(payloadRecord.protocolStats || payloadRecord);
   
   // Parse winner types
-  const winnerTypes = parseWinnerTypes(payload.protocolStats || payload);
+  const winnerTypes = parseWinnerTypes(payloadRecord.protocolStats || payloadRecord);
 
   return {
     motherlode: motherlodeOracle,
-    totalValue: readNumber(payload.protocolStats, 'totalValue') ?? 0,
-    participants: readNumber(payload.protocolStats, 'participants') ?? 0,
+    totalValue: readNumber(payloadRecord.protocolStats, 'totalValue') ?? 0,
+    participants: readNumber(payloadRecord.protocolStats, 'participants') ?? 0,
     rounds: roundsList,
     blockPerformance,
     winnerTypes
