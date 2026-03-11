@@ -42,55 +42,31 @@ test('renders stats from the upstream data sources during prerender', async () =
       );
     }
 
-    if (input.toString() === 'https://api.rore.supply/api/motherlode') {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 43210,
-          participants: 246,
-          history: [
-            {
-              label: 'R10',
-              totalValue: '800000000000000000',
-              timestamp: Date.parse('2026-03-07T12:34:56.000Z'),
-            },
-            {
-              label: 'R11',
-              totalValue: '1000000000000000000',
-              timestamp: Date.parse('2026-03-08T12:34:56.000Z'),
-            },
-            {
-              label: 'R12',
-              totalValue: '1234500000000000000',
-              timestamp: Date.parse('2026-03-09T12:34:56.000Z'),
-            },
-          ],
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
     return new Response(
       JSON.stringify({
-        round: 12,
-        status: 'active',
-        prize: 777,
-        entries: 88,
-        endTime,
-        blockPerformance: {
-          1: 2,
-          3: 1,
-          25: 4,
+        protocolStats: {
+          motherlode: 43210,
+          totalValue: 1.2345,
+          participants: 246,
+          blockPerformance: {
+            1: 2,
+            3: 1,
+            25: 4,
+          },
+          winnerTypes: {
+            winnerTakeAll: 9,
+            split: 3,
+          },
         },
-        winnerTypes: {
-          winnerTakeAll: 9,
-          split: 3,
-        },
+        roundsData: [
+          {
+            roundId: 12,
+            status: 'active',
+            prize: 777,
+            entries: 88,
+            endTime,
+          },
+        ],
       }),
       {
         headers: {
@@ -105,8 +81,7 @@ test('renders stats from the upstream data sources during prerender', async () =
 
   assert.deepEqual(requestedUrls, [
     'https://api.rore.supply/api/prices',
-    'https://api.rore.supply/api/motherlode',
-    'https://api.rore.supply/api/rounds/current',
+    'https://api.rore.supply/api/explore',
   ]);
   assert.match(markup, /rORE Stats Dashboard/);
   assert.match(markup, /Motherlode/);
@@ -134,18 +109,11 @@ test('renders stats from the upstream data sources during prerender', async () =
   assert.match(markup, /Burncoin reserves/);
   assert.match(markup, /Motherlode Over Time/);
   assert.match(markup, /Recent total value history in rORE\./);
+  assert.match(markup, /Motherlode history is not available from the upstream payload yet\./);
   assert.match(markup, /Burncoin countdown/);
   assert.match(markup, /Hover or focus a bar for exact values\./);
   assert.match(markup, /dashboard-chip/);
-  assert.match(markup, /aria-label="Motherlode over time line chart"/);
-  assert.match(markup, /aria-label="Motherlode total value over time"/);
   assert.match(markup, /aria-label="Winner type pie chart for Winner Take All and Split rounds"/);
-  assert.match(markup, /R10/);
-  assert.match(markup, /R12/);
-  assert.match(markup, /aria-label="Motherlode history time filters"/);
-  assert.match(markup, /aria-pressed="false"[^>]*>24H/);
-  assert.match(markup, /aria-pressed="true"[^>]*>7D/);
-  assert.match(markup, /aria-pressed="false"[^>]*>30D/);
   assert.match(markup, /aria-label="Market snapshot bar chart for WETH\/USD and rORE prices"/);
   assert.match(markup, /aria-label="Protocol snapshot bar chart for Motherlode and round metrics"/);
   assert.match(markup, /aria-label="Block performance bar chart for wins per block 1 through 25"/);
@@ -200,55 +168,31 @@ test('renders responsive layouts for dashboard features on mobile and desktop', 
       );
     }
 
-    if (input.toString() === 'https://api.rore.supply/api/motherlode') {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 43210,
-          participants: 246,
-          history: [
-            {
-              label: 'R10',
-              totalValue: '800000000000000000',
-              timestamp: Date.parse('2026-03-07T12:34:56.000Z'),
-            },
-            {
-              label: 'R11',
-              totalValue: '1000000000000000000',
-              timestamp: Date.parse('2026-03-08T12:34:56.000Z'),
-            },
-            {
-              label: 'R12',
-              totalValue: '1234500000000000000',
-              timestamp: Date.parse('2026-03-09T12:34:56.000Z'),
-            },
-          ],
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
     return new Response(
       JSON.stringify({
-        round: 12,
-        status: 'active',
-        prize: 777,
-        entries: 88,
-        endTime,
-        blockPerformance: {
-          1: 2,
-          3: 1,
-          25: 4,
+        protocolStats: {
+          motherlode: 43210,
+          totalValue: 1.2345,
+          participants: 246,
+          blockPerformance: {
+            1: 2,
+            3: 1,
+            25: 4,
+          },
+          winnerTypes: {
+            winnerTakeAll: 9,
+            split: 3,
+          },
         },
-        winnerTypes: {
-          winnerTakeAll: 9,
-          split: 3,
-        },
+        roundsData: [
+          {
+            roundId: 12,
+            status: 'active',
+            prize: 777,
+            entries: 88,
+            endTime,
+          },
+        ],
       }),
       {
         headers: {

@@ -1,5 +1,5 @@
 import { logError } from './log';
-import { parseMotherlodeData, parseMotherlodeHistory, type MotherlodeHistoryPoint, type MotherlodeApiResponse } from './motherlode';
+import type { MotherlodeHistoryPoint } from './motherlode';
 
 export interface StatsData {
   wethPrice: number;
@@ -31,14 +31,6 @@ export interface StatsData {
 interface PricesApiResponse {
   weth: number;
   rore: number;
-}
-
-interface CurrentRoundApiResponse {
-  round: number;
-  status: string;
-  prize: number;
-  entries: number;
-  endTime: number;
 }
 
 const PRICES_API_URL = 'https://api.rore.supply/api/prices';
@@ -75,12 +67,6 @@ const BLOCK_PERFORMANCE_KEYS = [
 ];
 const BLOCK_LABEL_KEYS = ['block', 'blockNumber', 'winningBlock', 'winnerBlock', 'label', 'name', 'key'];
 const ROUND_COLLECTION_KEYS = ['items', 'rounds', 'results', 'data'];
-const REQUEST_INIT: RequestInit & { next: { revalidate: number } } = {
-  headers: {
-    Accept: 'application/json',
-  },
-  next: { revalidate: 30 },
-};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -102,6 +88,14 @@ function readNumber(source: Record<string, unknown>, key: string): number {
   }
 
   throw new Error(`Invalid numeric field: ${key}`);
+}
+
+function readOptionalNumber(source: Record<string, unknown>, key: string): number | null {
+  if (!(key in source)) {
+    return null;
+  }
+
+  return readNumber(source, key);
 }
 
 function readNumberFromKeys(source: Record<string, unknown>, keys: string[]): number {
@@ -126,32 +120,61 @@ function readNumberFromKeys(source: Record<string, unknown>, keys: string[]): nu
 
 function readOptionalNumberFromKeys(source: Record<string, unknown>, keys: string[]): number | null {
   for (const key of keys) {
-    const value = source[key];
+    const value = readOptionalNumber(source, key);
 
-    if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value !== null) {
       return value;
-    }
-
-    if (typeof value === 'string' && value.trim() !== '') {
-      const parsedValue = Number(value);
-
-      if (Number.isFinite(parsedValue)) {
-        return parsedValue;
-      }
     }
   }
 
   return null;
 }
 
-function readString(source: Record<string, unknown>, key: string): string {
+function convertWeiToDecimal(value: string): number {
+  const normalizedValue = value.replace(/^0+/, '') || '0';
+  const wholeDigits = normalizedValue.length > 18 ? normalizedValue.slice(0, -18) : '0';
+  const fractionalDigits = normalizedValue
+    .slice(-18)
+    .padStart(18, '0')
+    .replace(/0+$/, '');
+  const decimalValue = fractionalDigits ? `${wholeDigits}.${fractionalDigits}` : wholeDigits;
+  const parsedValue = Number(decimalValue);
+
+  if (Number.isFinite(parsedValue)) {
+    return parsedValue;
+  }
+
+  throw new Error('Invalid wei value: motherlode');
+}
+
+function readMotherlodeAmount(source: Record<string, unknown>, key: string): number | null {
+  if (!(key in source)) {
+    return null;
+  }
+
   const value = source[key];
 
-  if (typeof value === 'string' && value.trim() !== '') {
+  if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
 
-  throw new Error(`Invalid string field: ${key}`);
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`Invalid numeric field: ${key}`);
+  }
+
+  const normalizedValue = value.trim();
+
+  if (/^\d+$/.test(normalizedValue)) {
+    return convertWeiToDecimal(normalizedValue);
+  }
+
+  const parsedValue = Number(normalizedValue);
+
+  if (Number.isFinite(parsedValue)) {
+    return parsedValue;
+  }
+
+  throw new Error(`Invalid numeric field: ${key}`);
 }
 
 function readOptionalStringFromKeys(source: Record<string, unknown>, keys: string[]): string | null {
@@ -436,24 +459,28 @@ function parseExploreData(payload: unknown): {
     throw new Error('Invalid explore payload');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const payloadRecord = payload as any;
+  const payloadRecord = payload;
+  const protocolStats = isRecord(payloadRecord.protocolStats) ? payloadRecord.protocolStats : null;
 
   // Parse protocolStats.motherlode (from wei to ORE)
-  const motherlodeWei = payloadRecord.protocolStats?.motherlode || payloadRecord.motherlode || '0';
-  const motherlodeOracle = readNumber(payloadRecord, 'motherlode') ?? 
-    (typeof motherlodeWei === 'string' ? Number(motherlodeWei) / 1e18 : 0);
+  const motherlodeOracle = readMotherlodeAmount(payloadRecord, 'motherlode')
+    ?? (protocolStats ? readMotherlodeAmount(protocolStats, 'motherlode') : null)
+    ?? 0;
 
   // Get current round from roundsData[0]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const roundsArray: any[] = payloadRecord.roundsData || payloadRecord.rounds || [];
-  const currentRound = roundsArray[0] || {};
-  const roundsList = roundsArray.map((r: any) => ({
-    roundId: r.roundId,
-    status: r.status || 'Unknown',
-    prize: readNumber(r, 'prize') ?? 0,
-    entries: readNumber(r, 'entries') ?? 0,
-    endTime: readNumber(r, 'endTime') ?? Date.now()
+  const roundsArray = Array.isArray(payloadRecord.roundsData)
+    ? payloadRecord.roundsData
+    : Array.isArray(payloadRecord.rounds)
+      ? payloadRecord.rounds
+      : [];
+  const roundsList = roundsArray.map((round) => ({
+    roundId: isRecord(round) ? (readOptionalNumber(round, 'roundId') ?? 0) : 0,
+    status: isRecord(round) && typeof round.status === 'string' && round.status.trim() !== ''
+      ? round.status
+      : 'Unknown',
+    prize: isRecord(round) ? (readOptionalNumber(round, 'prize') ?? 0) : 0,
+    entries: isRecord(round) ? (readOptionalNumber(round, 'entries') ?? 0) : 0,
+    endTime: isRecord(round) ? (readOptionalNumber(round, 'endTime') ?? Date.now()) : Date.now()
   }));
 
   // Parse block performance from protocolStats or roundsData
@@ -464,22 +491,12 @@ function parseExploreData(payload: unknown): {
 
   return {
     motherlode: motherlodeOracle,
-    totalValue: readNumber(payloadRecord.protocolStats, 'totalValue') ?? 0,
-    participants: readNumber(payloadRecord.protocolStats, 'participants') ?? 0,
+    totalValue: protocolStats ? (readOptionalNumber(protocolStats, 'totalValue') ?? 0) : 0,
+    participants: protocolStats ? (readOptionalNumber(protocolStats, 'participants') ?? 0) : 0,
     rounds: roundsList,
     blockPerformance,
     winnerTypes
   };
-}
-
-async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url, REQUEST_INIT);
-
-  if (!response.ok) {
-    throw new Error(`Request failed for ${url}: ${response.status}`);
-  }
-
-  return response.json();
 }
 
 export async function getStatsData(): Promise<StatsData | null> {

@@ -11,6 +11,15 @@ function mockFetch(implementation: typeof fetch) {
   global.fetch = implementation;
 }
 
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    status,
+  });
+}
+
 test.afterEach(() => {
   global.fetch = originalFetch;
   console.error = originalConsoleError;
@@ -21,59 +30,31 @@ test('returns aggregated stats with CORS headers', async () => {
   Date.now = () => 1_741_525_600_000;
 
   let requestCount = 0;
-  mockFetch(async (input, init) => {
+  mockFetch(async (input) => {
     requestCount += 1;
 
     if (requestCount === 1) {
       assert.equal(input.toString(), 'https://api.rore.supply/api/prices');
-      assert.deepEqual(init, {
-        headers: {
-          Accept: 'application/json',
-        },
-        next: { revalidate: 30 },
-      });
-
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      });
+      return jsonResponse({ weth: 1234.56, rore: 0.8 });
     }
 
-    if (requestCount === 2) {
-      assert.equal(input.toString(), 'https://api.rore.supply/api/motherlode');
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-        }),
+    assert.equal(input.toString(), 'https://api.rore.supply/api/explore');
+    return jsonResponse({
+      protocolStats: {
+        motherlode: '1234500000000000000',
+        totalValue: 456.7,
+        participants: 42,
+      },
+      roundsData: [
         {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
-    assert.equal(input.toString(), 'https://api.rore.supply/api/rounds/current');
-    return new Response(
-      JSON.stringify({
-        round: 7,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
+          roundId: 7,
+          status: 'active',
+          prize: 999,
+          entries: 77,
+          endTime: 1_741_526_200_000,
         },
-        status: 200,
-      }
-    );
+      ],
+    });
   });
 
   const response = await GET();
@@ -83,8 +64,8 @@ test('returns aggregated stats with CORS headers', async () => {
     wethPrice: 1234.56,
     rorePrice: 0.8,
     motherlode: {
-      totalValue: 1.2345,
-      totalORELocked: 8910,
+      totalValue: 456.7,
+      totalORELocked: 1.2345,
       participants: 42,
     },
     currentRound: {
@@ -101,7 +82,7 @@ test('returns aggregated stats with CORS headers', async () => {
   assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'Content-Type');
 });
 
-test('accepts usd and rore aliases from the upstream prices payload', async () => {
+test('falls back to aliases from the upstream prices payload', async () => {
   Date.now = () => 1_741_525_600_000;
 
   let requestCount = 0;
@@ -109,147 +90,37 @@ test('accepts usd and rore aliases from the upstream prices payload', async () =
     requestCount += 1;
 
     if (requestCount === 1) {
-      return new Response(JSON.stringify({ usd: 1234.56, rore: 0.8 }), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      });
+      return jsonResponse({ usd: 1234.56, ore: 0.8 });
     }
 
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-        }),
+    return jsonResponse({
+      protocolStats: {
+        motherlode: 12,
+        totalValue: 456.7,
+        participants: 42,
+      },
+      roundsData: [
         {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 7,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
+          roundId: 7,
+          status: 'active',
+          prize: 999,
+          entries: 77,
+          endTime: 1_741_526_200_000,
         },
-        status: 200,
-      }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    wethPrice: 1234.56,
-    rorePrice: 0.8,
-    motherlode: {
-      totalValue: 1.2345,
-      totalORELocked: 8910,
-      participants: 42,
-    },
-    currentRound: {
-      number: 7,
-      status: 'active',
-      prize: 999,
-      entries: 77,
-      endTime: 1_741_526_200_000,
-    },
-    lastUpdated: 1_741_525_600_000,
-  });
-});
-
-test('includes motherlode history when the upstream payload provides it', async () => {
-  Date.now = () => 1_741_525_600_000;
-
-  let requestCount = 0;
-  mockFetch(async () => {
-    requestCount += 1;
-
-    if (requestCount === 1) {
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      });
-    }
-
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-          history: [
-            {
-              label: 'R5',
-              totalValue: '600000000000000000',
-            },
-            {
-              label: 'R6',
-              totalValue: '900000000000000000',
-            },
-            {
-              label: 'R7',
-              totalValue: '1234500000000000000',
-            },
-          ],
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 7,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    wethPrice: 1234.56,
-    rorePrice: 0.8,
-    motherlode: {
-      totalValue: 1.2345,
-      totalORELocked: 8910,
-      participants: 42,
-      history: [
-        { label: 'R5', value: 0.6 },
-        { label: 'R6', value: 0.9 },
-        { label: 'R7', value: 1.2345 },
       ],
+    });
+  });
+
+  const response = await GET();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    wethPrice: 1234.56,
+    rorePrice: 0.8,
+    motherlode: {
+      totalValue: 456.7,
+      totalORELocked: 12,
+      participants: 42,
     },
     currentRound: {
       number: 7,
@@ -262,7 +133,7 @@ test('includes motherlode history when the upstream payload provides it', async 
   });
 });
 
-test('includes winner type counts when the upstream round payload provides them', async () => {
+test('returns valid JSON when explore fields are missing', async () => {
   Date.now = () => 1_741_525_600_000;
 
   let requestCount = 0;
@@ -270,37 +141,16 @@ test('includes winner type counts when the upstream round payload provides them'
     requestCount += 1;
 
     if (requestCount === 1) {
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), {
-        headers: {
-          'Content-Type': 'application/json',
+      return jsonResponse({ weth: 1234.56, rore: 0.8 });
+    }
+
+    return jsonResponse({
+      protocolStats: {
+        blockPerformance: {
+          1: 3,
+          5: '2',
+          25: 1,
         },
-        status: 200,
-      });
-    }
-
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 7,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
         winnerTypes: [
           {
             type: 'Winner Take All',
@@ -311,172 +161,41 @@ test('includes winner type counts when the upstream round payload provides them'
             count: 3,
           },
         ],
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    wethPrice: 1234.56,
-    rorePrice: 0.8,
-    winnerTypes: {
-      winnerTakeAll: 9,
-      split: 3,
-    },
-    motherlode: {
-      totalValue: 1.2345,
-      totalORELocked: 8910,
-      participants: 42,
-    },
-    currentRound: {
-      number: 7,
-      status: 'active',
-      prize: 999,
-      entries: 77,
-      endTime: 1_741_526_200_000,
-    },
-    lastUpdated: 1_741_525_600_000,
-  });
-});
-
-test('includes wins per block for blocks 1 through 25 when the upstream round payload provides them', async () => {
-  Date.now = () => 1_741_525_600_000;
-
-  let requestCount = 0;
-  mockFetch(async () => {
-    requestCount += 1;
-
-    if (requestCount === 1) {
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      });
-    }
-
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-        }),
+      },
+      roundsData: [
         {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 7,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-        blockPerformance: {
-          1: 3,
-          5: '2',
-          25: 1,
+          roundId: 17,
         },
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      }
-    );
+      ],
+    });
   });
 
   const response = await GET();
   const body = await response.json();
 
   assert.equal(response.status, 200);
-  assert.deepEqual(body.blockPerformance, Array.from({ length: 25 }, (_, index) => ({
-    block: index + 1,
-    wins: index === 0 ? 3 : index === 4 ? 2 : index === 24 ? 1 : 0,
-  })));
-});
-
-test('falls back to the ore field when the upstream rORE price is unavailable', async () => {
-  Date.now = () => 1_741_525_600_000;
-
-  let requestCount = 0;
-  mockFetch(async () => {
-    requestCount += 1;
-
-    if (requestCount === 1) {
-      return new Response(JSON.stringify({ usd: 1234.56, ore: 0.8 }), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      });
-    }
-
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          status: 200,
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 7,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
+  assert.deepEqual(body, {
     wethPrice: 1234.56,
     rorePrice: 0.8,
+    blockPerformance: Array.from({ length: 25 }, (_, index) => ({
+      block: index + 1,
+      wins: index === 0 ? 3 : index === 4 ? 2 : index === 24 ? 1 : 0,
+    })),
+    winnerTypes: {
+      winnerTakeAll: 9,
+      split: 3,
+    },
     motherlode: {
-      totalValue: 1.2345,
-      totalORELocked: 8910,
-      participants: 42,
+      totalValue: 0,
+      totalORELocked: 0,
+      participants: 0,
     },
     currentRound: {
-      number: 7,
-      status: 'active',
-      prize: 999,
-      entries: 77,
-      endTime: 1_741_526_200_000,
+      number: 17,
+      status: 'Unknown',
+      prize: 0,
+      entries: 0,
+      endTime: 1_741_525_600_000,
     },
     lastUpdated: 1_741_525_600_000,
   });
@@ -497,217 +216,15 @@ test('returns a 500 response when aggregation fails', async () => {
   assert.equal(response.status, 500);
   assert.deepEqual(await response.json(), { error: 'Failed to aggregate stats from rORE API' });
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
-  assert.equal(loggedMessage, 'Failed to aggregate stats from rORE API');
+  assert.equal(loggedMessage, 'Failed to fetch stats');
   assert.equal(loggedPayload?.route, '/api/stats');
-  assert.deepEqual(loggedPayload?.upstreamUrls, [
-    'https://api.rore.supply/api/prices',
-    'https://api.rore.supply/api/motherlode',
-    'https://api.rore.supply/api/rounds/current',
-  ]);
   assert.equal(
     (loggedPayload?.error as Record<string, unknown>).message,
-    'Request failed for https://api.rore.supply/api/prices: 503'
+    'Prices failed: 503'
   );
 });
 
-test('returns a 500 response when the motherlode payload is invalid', async () => {
-  console.error = () => {};
-
-  let requestCount = 0;
-  mockFetch(async () => {
-    requestCount += 1;
-
-    if (requestCount === 1) {
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), { status: 200 });
-    }
-
-    if (requestCount === 2) {
-      return new Response(JSON.stringify({ totalValue: 4567, totalORELocked: 8910 }), { status: 200 });
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 7,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      { status: 200 }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 500);
-  assert.deepEqual(await response.json(), { error: 'Failed to aggregate stats from rORE API' });
-});
-
-test('calculates the motherlode totalValue from the current round when the upstream payload omits it', async () => {
-  Date.now = () => 1_741_525_600_000;
-
-  let requestCount = 0;
-  mockFetch(async () => {
-    requestCount += 1;
-
-    if (requestCount === 1) {
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), { status: 200 });
-    }
-
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          lastHitRound: 12,
-          totalORELocked: 8910,
-          participants: 42,
-        }),
-        { status: 200 }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 15,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      { status: 200 }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    wethPrice: 1234.56,
-    rorePrice: 0.8,
-    motherlode: {
-      totalValue: 0.6,
-      totalORELocked: 8910,
-      participants: 42,
-      history: [
-        { label: 'R12', value: 0 },
-        { label: 'R13', value: 0.2 },
-        { label: 'R14', value: 0.4 },
-        { label: 'R15', value: 0.6 },
-      ],
-    },
-    currentRound: {
-      number: 15,
-      status: 'active',
-      prize: 999,
-      entries: 77,
-      endTime: 1_741_526_200_000,
-    },
-    lastUpdated: 1_741_525_600_000,
-  });
-});
-
-test('derives motherlode history from totalValue when explicit history and hit metadata are unavailable', async () => {
-  Date.now = () => 1_741_525_600_000;
-
-  let requestCount = 0;
-  mockFetch(async () => {
-    requestCount += 1;
-
-    if (requestCount === 1) {
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), { status: 200 });
-    }
-
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          totalValue: '600000000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-        }),
-        { status: 200 }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 15,
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      { status: 200 }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    wethPrice: 1234.56,
-    rorePrice: 0.8,
-    motherlode: {
-      totalValue: 0.6,
-      totalORELocked: 8910,
-      participants: 42,
-      history: [
-        { label: 'R12', value: 0 },
-        { label: 'R13', value: 0.2 },
-        { label: 'R14', value: 0.4 },
-        { label: 'R15', value: 0.6 },
-      ],
-    },
-    currentRound: {
-      number: 15,
-      status: 'active',
-      prize: 999,
-      entries: 77,
-      endTime: 1_741_526_200_000,
-    },
-    lastUpdated: 1_741_525_600_000,
-  });
-});
-
-test('returns a 500 response when the round payload is invalid', async () => {
-  console.error = () => {};
-
-  let requestCount = 0;
-  mockFetch(async () => {
-    requestCount += 1;
-
-    if (requestCount === 1) {
-      return new Response(JSON.stringify({ weth: 1234.56, rore: 0.8 }), { status: 200 });
-    }
-
-    if (requestCount === 2) {
-      return new Response(
-        JSON.stringify({
-          totalValue: '1234500000000000000',
-          totalORELocked: 8910,
-          participants: 42,
-        }),
-        { status: 200 }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        round: 'not-a-number',
-        status: 'active',
-        prize: 999,
-        entries: 77,
-        endTime: 1_741_526_200_000,
-      }),
-      { status: 200 }
-    );
-  });
-
-  const response = await GET();
-
-  assert.equal(response.status, 500);
-  assert.deepEqual(await response.json(), { error: 'Failed to aggregate stats from rORE API' });
-});
-
-test('returns CORS headers for preflight requests', async () => {
+test('returns CORS headers for preflight requests', () => {
   const response = OPTIONS();
 
   assert.equal(response.status, 200);
