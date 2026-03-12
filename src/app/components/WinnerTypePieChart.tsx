@@ -1,3 +1,15 @@
+'use client';
+
+import { Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
 interface WinnerTypePieChartProps {
   winnerTakeAll: number;
   split: number;
@@ -7,10 +19,6 @@ const WINNER_TYPE_COLORS = {
   split: '#ffd166',
   winnerTakeAll: '#ff8a2a',
 } as const;
-
-function formatPercent(value: number, total: number) {
-  return `${Math.round((value / total) * 100)}%`;
-}
 
 function formatCount(value: number) {
   return value.toLocaleString(undefined, {
@@ -25,24 +33,41 @@ export default function WinnerTypePieChart({ winnerTakeAll, split }: WinnerTypeP
     return null;
   }
 
-  const winnerTakeAllDegrees = (winnerTakeAll / total) * 360;
-  const legendItems = [
-    {
-      color: WINNER_TYPE_COLORS.winnerTakeAll,
-      label: 'Winner Take All',
-      value: winnerTakeAll,
+  const data = {
+    labels: ['Winner Take All', 'Split'],
+    datasets: [
+      {
+        data: [winnerTakeAll, split],
+        backgroundColor: [WINNER_TYPE_COLORS.winnerTakeAll, WINNER_TYPE_COLORS.split],
+        borderWidth: 0,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 1.5,
+    cutout: '70%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        callbacks: {
+          label: (context: any) => {
+            const value = context.raw as number;
+            const percent = Math.round((value / total) * 100);
+            return `${context.label}: ${formatCount(value)} rounds (${percent}%)`;
+          },
+        },
+      },
     },
-    {
-      color: WINNER_TYPE_COLORS.split,
-      label: 'Split',
-      value: split,
-    },
-  ];
+  };
 
   return (
     <section
       className="dashboard-panel dashboard-frame rounded-2xl p-6"
-      aria-label="Winner type pie chart for Winner Take All and Split rounds"
+      aria-label="Winner type distribution"
     >
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -57,31 +82,30 @@ export default function WinnerTypePieChart({ winnerTakeAll, split }: WinnerTypeP
 
       <div className="winner-type-chart">
         <figure className="winner-type-chart__figure" aria-label="Winner type distribution">
-          <div
-            className="winner-type-chart__pie"
-            style={{
-              background: `conic-gradient(${WINNER_TYPE_COLORS.winnerTakeAll} 0deg ${winnerTakeAllDegrees}deg, ${WINNER_TYPE_COLORS.split} ${winnerTakeAllDegrees}deg 360deg)`,
-            }}
-          >
-            <div className="winner-type-chart__center">
-              <p className="dashboard-heading text-2xl font-semibold">{formatCount(total)}</p>
-              <p className="dashboard-subtle text-xs uppercase tracking-[0.28em]">Rounds</p>
-            </div>
+          <div style={{ position: 'relative', height: '250px', width: '100%' }}>
+            <Doughnut data={data} options={options} />
           </div>
         </figure>
 
         <ul className="winner-type-chart__legend">
-          {legendItems.map((item) => (
-            <li key={item.label} className="winner-type-chart__legend-item">
-              <span className="winner-type-chart__swatch" aria-hidden="true" style={{ background: item.color }}></span>
-              <div>
-                <p className="dashboard-heading text-sm font-semibold">{item.label}</p>
-                <p className="dashboard-muted text-sm">
-                  {formatCount(item.value)} rounds / {formatPercent(item.value, total)}
-                </p>
-              </div>
-            </li>
-          ))}
+          <li className="winner-type-chart__legend-item">
+            <span className="winner-type-chart__swatch" aria-hidden="true" style={{ background: WINNER_TYPE_COLORS.winnerTakeAll }}></span>
+            <div>
+              <p className="dashboard-heading text-sm font-semibold">Winner Take All</p>
+              <p className="dashboard-muted text-sm">
+                {formatCount(winnerTakeAll)} rounds / {Math.round((winnerTakeAll / total) * 100)}%
+              </p>
+            </div>
+          </li>
+          <li className="winner-type-chart__legend-item">
+            <span className="winner-type-chart__swatch" aria-hidden="true" style={{ background: WINNER_TYPE_COLORS.split }}></span>
+            <div>
+              <p className="dashboard-heading text-sm font-semibold">Split</p>
+              <p className="dashboard-muted text-sm">
+                {formatCount(split)} rounds / {Math.round((split / total) * 100)}%
+              </p>
+            </div>
+          </li>
         </ul>
       </div>
     </section>

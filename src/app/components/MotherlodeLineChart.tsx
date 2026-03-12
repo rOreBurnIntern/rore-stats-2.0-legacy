@@ -1,21 +1,45 @@
-import type { MotherlodeHistoryPoint } from '../lib/motherlode';
+'use client';
+
+import { useRef } from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
+
+ChartJS.register(
+  zoomPlugin,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+interface MotherlodeHistoryPoint {
+  label: string;
+  value: number;
+  timestamp?: number;
+}
 
 interface MotherlodeLineChartProps {
   points?: MotherlodeHistoryPoint[];
 }
 
-const VIEWBOX_WIDTH = 320;
-const VIEWBOX_HEIGHT = 140;
-const CHART_PADDING_X = 14;
-const CHART_PADDING_Y = 14;
-
-function formatValue(value: number) {
-  return value.toLocaleString(undefined, {
-    maximumFractionDigits: 4,
-  });
-}
-
 export default function MotherlodeLineChart({ points = [] }: MotherlodeLineChartProps) {
+  const chartRef = useRef<ChartJS<'line'>>(null);
+
   if (points.length === 0) {
     return (
       <div className="motherlode-trend mt-6">
@@ -25,88 +49,109 @@ export default function MotherlodeLineChart({ points = [] }: MotherlodeLineChart
             <p className="dashboard-muted text-sm">Recent total value history in rORE.</p>
           </div>
         </div>
-        <p className="dashboard-muted text-sm">Motherlode history is not available from the upstream payload yet.</p>
+        <p className="dashboard-muted text-sm">Motherlode history is not available.</p>
       </div>
     );
   }
 
-  const minValue = Math.min(...points.map((point) => point.value), 0);
-  const maxValue = Math.max(...points.map((point) => point.value), 1);
-  const valueRange = Math.max(maxValue - minValue, 1);
-  const chartWidth = VIEWBOX_WIDTH - CHART_PADDING_X * 2;
-  const chartHeight = VIEWBOX_HEIGHT - CHART_PADDING_Y * 2;
-  const totalSegments = Math.max(points.length - 1, 1);
-  const coordinates = points.map((point, index) => {
-    const x = CHART_PADDING_X + (chartWidth * index) / totalSegments;
-    const y = CHART_PADDING_Y + chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
+  const data = {
+    labels: points.map(p => p.label),
+    datasets: [
+      {
+        label: 'Total Value (rORE)',
+        data: points.map(p => p.value),
+        borderColor: '#ff8a2a',
+        backgroundColor: 'rgba(255, 138, 42, 0.1)',
+        fill: true,
+        tension: 0.1,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        borderWidth: 2,
+      },
+    ],
+  };
 
-    return { ...point, x, y };
-  });
-  const polylinePoints = coordinates.map(({ x, y }) => `${x},${y}`).join(' ');
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 2.5,
+    plugins: {
+      legend: { display: false },
+      zoom: {
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'x' as const,
+        },
+        pan: {
+          enabled: true,
+          mode: 'x' as const,
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#ff8a2a',
+        bodyColor: '#fff',
+        callbacks: {
+          label: (context: any) => {
+            const value = context.parsed.y;
+            return `${value.toLocaleString(undefined, { maximumFractionDigits: 4 })} rORE`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { maxTicksLimit: 8, color: '#999' },
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: {
+          callback: (value: any) => value.toLocaleString(undefined, { maximumFractionDigits: 0 }),
+          color: '#999',
+        },
+      },
+    },
+  };
 
   return (
     <div className="motherlode-trend mt-6">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h4 className="dashboard-heading text-sm font-semibold">Motherlode Over Time</h4>
-          <p className="dashboard-muted text-sm">Recent total value history in rORE.</p>
+          <p className="dashboard-muted text-sm">Total value history in rORE.</p>
         </div>
         <p className="dashboard-chart-note dashboard-subtle rounded-full px-3 py-1 text-xs">
           {points.length} points
         </p>
       </div>
 
-      <figure className="motherlode-trend__frame" aria-label="Motherlode over time line chart">
-        <svg
-          className="motherlode-trend__svg"
-          viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
-          role="img"
-          aria-label="Motherlode total value over time"
+      <figure className="motherlode-trend__figure" aria-label="Motherlode over time line chart">
+        <div style={{ position: 'relative', height: '300px', width: '100%' }}>
+          <Line ref={chartRef} data={data} options={options} />
+        </div>
+        <button
+          type="button"
+          className="mt-2 text-xs text-orange-400 hover:text-orange-300"
+          onClick={() => {
+            if (chartRef.current) {
+              // @ts-ignore
+              chartRef.current.resetZoom();
+            }
+          }}
         >
-          <g className="motherlode-trend__grid" aria-hidden="true">
-            <line x1={CHART_PADDING_X} y1={CHART_PADDING_Y} x2={VIEWBOX_WIDTH - CHART_PADDING_X} y2={CHART_PADDING_Y} />
-            <line
-              x1={CHART_PADDING_X}
-              y1={CHART_PADDING_Y + chartHeight / 2}
-              x2={VIEWBOX_WIDTH - CHART_PADDING_X}
-              y2={CHART_PADDING_Y + chartHeight / 2}
-            />
-            <line
-              x1={CHART_PADDING_X}
-              y1={VIEWBOX_HEIGHT - CHART_PADDING_Y}
-              x2={VIEWBOX_WIDTH - CHART_PADDING_X}
-              y2={VIEWBOX_HEIGHT - CHART_PADDING_Y}
-            />
-          </g>
-          <polyline className="motherlode-trend__line" points={polylinePoints} />
-          {coordinates.map((point) => (
-            <circle
-              key={`${point.label}-${point.value}`}
-              className="motherlode-trend__dot"
-              cx={point.x}
-              cy={point.y}
-              r="4"
-            />
-          ))}
-        </svg>
-
-        <ul className="motherlode-trend__labels">
-          {points.map((point) => (
-            <li key={`${point.label}-${point.value}`} className="motherlode-trend__label">
-              <span className="dashboard-subtle block text-[0.7rem] uppercase tracking-[0.18em]">{point.label}</span>
-              <span className="dashboard-muted block text-xs">{formatValue(point.value)} rORE</span>
-            </li>
-          ))}
-        </ul>
-
-        <ul className="sr-only">
-          {points.map((point) => (
-            <li key={`sr-${point.label}-${point.value}`}>
-              {point.label}: {formatValue(point.value)} rORE
-            </li>
-          ))}
-        </ul>
+          Reset Zoom
+        </button>
       </figure>
+
+      <ul className="sr-only">
+        {points.map((point) => (
+          <li key={`sr-${point.label}-${point.value}`}>
+            {point.label}: {point.value.toLocaleString(undefined, { maximumFractionDigits: 4 })} rORE
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

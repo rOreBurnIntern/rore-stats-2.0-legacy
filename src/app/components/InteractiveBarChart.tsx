@@ -1,4 +1,24 @@
-import type { CSSProperties } from 'react';
+'use client';
+
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface InteractiveBarChartPoint {
   label: string;
@@ -28,10 +48,54 @@ export default function InteractiveBarChart({
   minColumnWidth = '3.5rem',
   maxBarWidth = '4.5rem',
 }: InteractiveBarChartProps) {
-  const maxValue = Math.max(...points.map((point) => point.value), 1);
-  const chartStyles: CSSProperties = {
-    gridTemplateColumns: `repeat(${Math.max(points.length, 1)}, minmax(${minColumnWidth}, 1fr))`,
-    minWidth: `calc(${Math.max(points.length, 1)} * ${minColumnWidth})`,
+  const maxValue = Math.max(...points.map(p => p.value), 1);
+
+  const data = {
+    labels: points.map(p => p.label),
+    datasets: [
+      {
+        label: title,
+        data: points.map(p => p.value),
+        backgroundColor: points.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
+        borderRadius: 4,
+        borderSkipped: false,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: Math.max(points.length * 0.4, 1.5),
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#ff8a2a',
+        bodyColor: '#fff',
+        callbacks: {
+          label: (context: any) => {
+            const point = points[context.dataIndex];
+            return `${point.label}: ${point.formattedValue}${point.detail ? '. ' + point.detail : ''}`;
+          },
+        },
+      },
+      title: { display: false },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#999' },
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.1)' },
+        ticks: {
+          callback: (value: any) => value.toLocaleString(),
+          color: '#999',
+        },
+        beginAtZero: true,
+      },
+    },
   };
 
   return (
@@ -48,46 +112,8 @@ export default function InteractiveBarChart({
       </div>
 
       <div className="interactive-chart">
-        <div className="interactive-chart__plot">
-          <div className="interactive-chart__grid" aria-hidden="true" style={chartStyles}>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <ul className="interactive-chart__bars" style={chartStyles}>
-            {points.map((point, index) => {
-              const barHeight = point.value > 0 ? `${Math.max((point.value / maxValue) * 100, 12)}%` : '4%';
-              const tooltipLabel = point.detail
-                ? `${point.label}: ${point.formattedValue}. ${point.detail}`
-                : `${point.label}: ${point.formattedValue}`;
-
-              return (
-                <li key={point.label} className="interactive-chart__item">
-                  <div className="interactive-chart__bar-group">
-                    <button
-                      type="button"
-                      className="interactive-chart__bar"
-                      aria-label={tooltipLabel}
-                      style={{
-                        height: barHeight,
-                        maxWidth: maxBarWidth,
-                        background: `linear-gradient(180deg, ${BAR_COLORS[index % BAR_COLORS.length]}, rgba(255, 138, 42, 0.18))`,
-                      }}
-                    >
-                      <span className="sr-only">{tooltipLabel}</span>
-                    </button>
-                    <div className="interactive-chart__tooltip" role="tooltip">
-                      <p className="dashboard-heading text-sm font-semibold">{point.label}</p>
-                      <p className="dashboard-accent text-sm">{point.formattedValue}</p>
-                      {point.detail && <p className="dashboard-muted text-xs">{point.detail}</p>}
-                    </div>
-                  </div>
-                  <p className="dashboard-subtle mt-3 text-center text-xs">{point.label}</p>
-                </li>
-              );
-            })}
-          </ul>
+        <div style={{ position: 'relative', height: '300px', width: '100%' }}>
+          <Bar data={data} options={options} />
         </div>
       </div>
     </section>

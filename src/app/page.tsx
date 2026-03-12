@@ -6,7 +6,7 @@ import ProtocolStatCards from './components/ProtocolStatCards';
 import RoundCard from './components/RoundCard';
 import WinnerTypePieChart from './components/WinnerTypePieChart';
 import { waitForRequest } from './lib/request';
-import { getStatsData } from './lib/stats';
+import { getDbStatsData } from './lib/db-stats';
 
 function getTimeRemaining(endTime: number, referenceTime: number) {
   return endTime > referenceTime
@@ -33,7 +33,7 @@ function formatWins(value: number) {
 
 export default async function Home() {
   await waitForRequest();
-  const statsData = await getStatsData();
+  const statsData = await getDbStatsData();
 
   const lastUpdatedAt = statsData?.lastUpdated ?? null;
   const remainingMinutes = statsData?.currentRound
@@ -126,25 +126,26 @@ export default async function Home() {
             />
           </div>
 
-          {blockPerformanceChartPoints.length > 0 && (
-            <InteractiveBarChart
-              title="Block Performance"
-              subtitle="Completed wins grouped by ending block for blocks 1 through 25."
-              ariaLabel="Block performance bar chart for wins per block 1 through 25"
-              note="Hover or focus a bar for exact values. Scroll to view all 25 blocks."
-              minColumnWidth="2.5rem"
-              maxBarWidth="2.5rem"
-              points={blockPerformanceChartPoints}
-            />
-          )}
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {blockPerformanceChartPoints.length > 0 && (
+              <InteractiveBarChart
+                title="Block Performance"
+                subtitle="Completed wins grouped by ending block for blocks 1 through 25."
+                ariaLabel="Block performance bar chart for wins per block 1 through 25"
+                note="Hover or focus a bar for exact values. Scroll to view all 25 blocks."
+                minColumnWidth="2.5rem"
+                maxBarWidth="2.5rem"
+                points={blockPerformanceChartPoints}
+              />
+            )}
+            {statsData.winnerTypes && (
+              <WinnerTypePieChart
+                winnerTakeAll={statsData.winnerTypes.winnerTakeAll}
+                split={statsData.winnerTypes.split}
+              />
+            )}
+          </div>
         </>
-      )}
-
-      {statsData?.winnerTypes && (
-        <WinnerTypePieChart
-          winnerTakeAll={statsData.winnerTypes.winnerTakeAll}
-          split={statsData.winnerTypes.split}
-        />
       )}
 
       {statsData?.motherlode && <MotherlodeCard {...statsData.motherlode} />}

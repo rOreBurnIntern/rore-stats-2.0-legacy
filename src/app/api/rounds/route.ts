@@ -1,31 +1,40 @@
 import { NextResponse } from 'next/server';
 import { withCors } from '../../lib/cors';
-import { logError } from '../../lib/log';
-
-const ROUND_API_URL = 'https://api.rore.supply/api/rounds/current';
-const ERROR_RESPONSE = { error: 'Failed to fetch current round data' };
+import { supabaseAdmin } from '../../lib/supabase/admin';
 
 export async function GET() {
   try {
-    const res = await fetch(ROUND_API_URL, {
-      cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    // Get the active round or latest
+    let { data, error } = await supabaseAdmin
+      .from('rounds')
+      .select('round_id, status, prize, entries, end_time')
+      .eq('status', 'Active')
+      .limit(1)
+      .maybeSingle();
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
+    if (error || !data) {
+      // Fallback to latest by round_id
+      ({ data, error } = await supabaseAdmin
+        .from('rounds')
+        .select('round_id, status, prize, entries, end_time')
+        .order('round_id', { ascending: false })
+        .limit(1)
+        .maybeSingle());
     }
 
-    const data = await res.json();
-    return withCors(NextResponse.json(data));
-  } catch (error) {
-    logError('Failed to fetch current round data', error, {
-      route: '/api/rounds',
-      upstreamUrl: ROUND_API_URL,
-    });
-    return withCors(NextResponse.json(ERROR_RESPONSE, { status: 500 }));
+    if (error || !data) {
+      return withCors(NextResponse.json({ error: 'No round data available' }, { status: 404 }));
+    }
+
+    return withCors(NextResponse.json({
+      roundId: data.round_id,
+      status: data.status,
+      prize: Number(data.prize),
+      entries: Number(data.entries),
+      endTime: new Date(data.end_time).getTime(),
+    }));
+  } catch (e) {
+    return withCors(NextResponse.json({ error: 'Failed to fetch round data' }, { status: 500 }));
   }
 }
 
