@@ -191,7 +191,7 @@ export async function getDbStatsData(): Promise<StatsData | null> {
 
     let history: MotherlodeHistoryPoint[] = [];
     if (historyRounds) {
-      history = historyRounds.map(r => ({
+      history = historyRounds.map((r: { round_id: number; motherlode_running: number | null }) => ({
         label: `R${r.round_id}`,
         value: Number(r.motherlode_running) || 0,
         timestamp: undefined,

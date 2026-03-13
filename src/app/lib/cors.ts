@@ -1,7 +1,7 @@
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-cron-secret',
+  'Access-Control-Allow-Headers': 'Content-Type',
 } as const;
 
 type HeaderTarget = Headers | { setHeader(name: string, value: string): void };

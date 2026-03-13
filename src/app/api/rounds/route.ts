@@ -1,40 +1,31 @@
 import { NextResponse } from 'next/server';
 import { withCors } from '../../lib/cors';
-import { supabaseAdmin } from '../../lib/supabase/admin';
+import { logError } from '../../lib/log';
+
+const CURRENT_ROUND_API_URL = 'https://api.rore.supply/api/rounds/current';
+const CURRENT_ROUND_ERROR_RESPONSE = { error: 'Failed to fetch current round data' };
+const CURRENT_ROUND_REQUEST_INIT: RequestInit = {
+  cache: 'no-store',
+  headers: {
+    Accept: 'application/json',
+  },
+};
 
 export async function GET() {
   try {
-    // Get the active round or latest
-    let { data, error } = await supabaseAdmin
-      .from('rounds')
-      .select('round_id, status, prize, entries, end_time')
-      .eq('status', 'Active')
-      .limit(1)
-      .maybeSingle();
+    const response = await fetch(CURRENT_ROUND_API_URL, CURRENT_ROUND_REQUEST_INIT);
 
-    if (error || !data) {
-      // Fallback to latest by round_id
-      ({ data, error } = await supabaseAdmin
-        .from('rounds')
-        .select('round_id, status, prize, entries, end_time')
-        .order('round_id', { ascending: false })
-        .limit(1)
-        .maybeSingle());
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    if (error || !data) {
-      return withCors(NextResponse.json({ error: 'No round data available' }, { status: 404 }));
-    }
-
-    return withCors(NextResponse.json({
-      roundId: data.round_id,
-      status: data.status,
-      prize: Number(data.prize),
-      entries: Number(data.entries),
-      endTime: new Date(data.end_time).getTime(),
-    }));
-  } catch (e) {
-    return withCors(NextResponse.json({ error: 'Failed to fetch round data' }, { status: 500 }));
+    return withCors(NextResponse.json(await response.json()));
+  } catch (error) {
+    logError('Failed to fetch current round data', error, {
+      route: '/api/rounds',
+      upstreamUrl: CURRENT_ROUND_API_URL,
+    });
+    return withCors(NextResponse.json(CURRENT_ROUND_ERROR_RESPONSE, { status: 500 }));
   }
 }
 

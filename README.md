@@ -31,6 +31,16 @@ Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 - Tailwind CSS
 - DaisyUI
 
+## Vendored DaisyUI Subset
+
+Theme: `coffee` only
+
+Components: `alert`, `card`, and `navbar`
+
+Utilities: `bg-base-200` and `text-base-content`
+
+The vendored DaisyUI CSS in `public/vendor/daisyui/themes.css` and `public/vendor/daisyui/styled.css` is intentionally trimmed to the selectors above to keep the shipped CSS small without changing the current dashboard presentation.
+
 ## Data Flow
 
 - Prices: `/api/prices` → fetches from `https://api.rore.supply/api/prices`

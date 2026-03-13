@@ -1,13 +1,13 @@
-/* v2.0.0 */ import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withCors } from '../../lib/cors';
-import { getDbStatsData } from '../../lib/db-stats';
+import { getStatsData } from '../../lib/stats';
 
 export async function GET() {
-  const stats = await getDbStatsData();
+  const stats = await getStatsData();
 
   if (!stats) {
     return withCors(NextResponse.json(
-      { error: 'Failed to load stats from database' },
+      { error: 'Failed to aggregate stats from rORE API' },
       { status: 500 }
     ));
   }

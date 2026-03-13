@@ -17,6 +17,7 @@
     "api/prices.ts",
     "api/prices.test.ts",
     "eslint.config.test.ts",
+    "daisyui-bundle.test.ts",
     "next.config.test.ts",
     "package.test.ts",
     "tailwind.config.ts",
