@@ -201,6 +201,106 @@ test('returns valid JSON when explore fields are missing', async () => {
   });
 });
 
+test('ignores nullable optional explore stats fields instead of returning 500', async () => {
+  Date.now = () => 1_741_525_600_000;
+
+  let requestCount = 0;
+  mockFetch(async () => {
+    requestCount += 1;
+
+    if (requestCount === 1) {
+      return jsonResponse({ weth: 1234.56, rore: 0.8 });
+    }
+
+    return jsonResponse({
+      protocolStats: {
+        motherlode: null,
+        totalValue: null,
+        participants: null,
+        winnerTypes: [
+          {
+            type: 'Split',
+            count: 3,
+          },
+        ],
+      },
+      roundsData: [
+        {
+          roundId: 17,
+          status: 'active',
+          prize: null,
+          entries: null,
+          endTime: null,
+        },
+      ],
+    });
+  });
+
+  const response = await GET();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    wethPrice: 1234.56,
+    rorePrice: 0.8,
+    winnerTypes: {
+      winnerTakeAll: 0,
+      split: 3,
+    },
+    motherlode: {
+      totalValue: 0,
+      totalORELocked: 0,
+      participants: 0,
+    },
+    currentRound: {
+      number: 17,
+      status: 'active',
+      prize: 0,
+      entries: 0,
+      endTime: 1_741_525_600_000,
+    },
+    lastUpdated: 1_741_525_600_000,
+  });
+});
+
+test('returns a 500 response when optional explore stats fields are malformed', async () => {
+  let loggedMessage = '';
+  let loggedPayload: Record<string, unknown> | undefined;
+  console.error = (message: unknown, payload: unknown) => {
+    loggedMessage = String(message);
+    loggedPayload = payload as Record<string, unknown>;
+  };
+
+  let requestCount = 0;
+  mockFetch(async () => {
+    requestCount += 1;
+
+    if (requestCount === 1) {
+      return jsonResponse({ weth: 1234.56, rore: 0.8 });
+    }
+
+    return jsonResponse({
+      protocolStats: {
+        participants: 'not-a-number',
+      },
+      roundsData: [
+        {
+          roundId: 17,
+        },
+      ],
+    });
+  });
+
+  const response = await GET();
+
+  assert.equal(response.status, 500);
+  assert.deepEqual(await response.json(), { error: 'Failed to aggregate stats from rORE API' });
+  assert.equal(loggedMessage, 'Failed to fetch stats');
+  assert.equal(
+    (loggedPayload?.error as Record<string, unknown>).message,
+    'Invalid numeric field: participants'
+  );
+});
+
 test('returns a 500 response when aggregation fails', async () => {
   let loggedMessage = '';
   let loggedPayload: Record<string, unknown> | undefined;

@@ -95,6 +95,16 @@ function readOptionalNumber(source: Record<string, unknown>, key: string): numbe
     return null;
   }
 
+  const value = source[key];
+
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string' && value.trim() === '') {
+    return null;
+  }
+
   return readNumber(source, key);
 }
 
@@ -154,15 +164,23 @@ function readMotherlodeAmount(source: Record<string, unknown>, key: string): num
 
   const value = source[key];
 
+  if (value === null || value === undefined) {
+    return null;
+  }
+
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
 
-  if (typeof value !== 'string' || value.trim() === '') {
+  if (typeof value !== 'string') {
     throw new Error(`Invalid numeric field: ${key}`);
   }
 
   const normalizedValue = value.trim();
+
+  if (normalizedValue === '') {
+    return null;
+  }
 
   if (/^\d+$/.test(normalizedValue)) {
     return convertWeiToDecimal(normalizedValue);
