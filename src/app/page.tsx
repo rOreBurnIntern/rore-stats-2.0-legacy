@@ -4,12 +4,12 @@ import InteractiveBarChart from './components/InteractiveBarChart';
 import ProtocolStatCards from './components/ProtocolStatCards';
 import WinnerTypePieChart from './components/WinnerTypePieChart';
 import MotherlodeLineChart from './components/MotherlodeLineChart';
+import getStatsData from './lib/stats';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const res = await fetch('/api/stats', { next: { revalidate: 0 } });
-  const statsData = res.ok ? await res.json() : null;
+  const statsData = await getStatsData().catch(() => null);
 
   const lastUpdatedAt = statsData?.lastUpdated ?? null;
 

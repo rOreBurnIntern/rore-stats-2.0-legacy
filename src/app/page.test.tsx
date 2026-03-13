@@ -9,6 +9,54 @@ test.afterEach(() => {
   global.fetch = originalFetch;
 });
 
+function mockUpstreamApis(statsData: any) {
+  global.fetch = async (input) => {
+    const requestUrl = input.toString();
+
+    if (requestUrl === 'https://api.rore.supply/api/prices') {
+      return new Response(
+        JSON.stringify({ weth: statsData.wethPrice, rore: statsData.rorePrice }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (requestUrl === 'https://api.rore.supply/api/explore') {
+      const blockPerformance = Array.isArray(statsData.blockPerformance)
+        ? Object.fromEntries(statsData.blockPerformance.map((point: any) => [point.block, point.wins]))
+        : undefined;
+
+      return new Response(
+        JSON.stringify({
+          protocolStats: {
+            motherlode: statsData.motherlode?.totalORELocked ?? 0,
+            totalValue: statsData.motherlode?.totalValue ?? 0,
+            participants: statsData.motherlode?.participants ?? 0,
+            ...(blockPerformance ? { blockPerformance } : {}),
+            ...(statsData.winnerTypes
+              ? {
+                  winnerTakeAll: statsData.winnerTypes.winnerTakeAll,
+                  split: statsData.winnerTypes.split,
+                }
+              : {}),
+          },
+          roundsData: [
+            {
+              roundId: statsData.currentRound?.number ?? 0,
+              status: statsData.currentRound?.status ?? 'Unknown',
+              prize: statsData.currentRound?.prize ?? 0,
+              entries: statsData.currentRound?.entries ?? 0,
+              endTime: statsData.currentRound?.endTime ?? Date.now(),
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    throw new Error(`Unexpected fetch URL in page test: ${requestUrl}`);
+  };
+}
+
 test('PRD v3.1 layout: does not render Market Snapshot or Protocol Snapshot charts', async () => {
   const mockStatsData = {
     wethPrice: 3000,
@@ -20,8 +68,7 @@ test('PRD v3.1 layout: does not render Market Snapshot or Protocol Snapshot char
     lastUpdated: Date.now(),
   };
 
-  global.fetch = async () =>
-    new Response(JSON.stringify(mockStatsData), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  mockUpstreamApis(mockStatsData);
 
   const markup = renderToStaticMarkup(await Home());
 
@@ -42,8 +89,7 @@ test('PRD v3.1 layout: single xl:grid-cols-2 grid contains WinnerTypePieChart an
     lastUpdated: Date.now(),
   };
 
-  global.fetch = async () =>
-    new Response(JSON.stringify(mockStatsData), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  mockUpstreamApis(mockStatsData);
 
   const markup = renderToStaticMarkup(await Home());
 
@@ -64,8 +110,7 @@ test('PRD v3.1 layout: MotherlodeLineChart appears after grid with motherlode-tr
     lastUpdated: Date.now(),
   };
 
-  global.fetch = async () =>
-    new Response(JSON.stringify(mockStatsData), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  mockUpstreamApis(mockStatsData);
 
   const markup = renderToStaticMarkup(await Home());
 
@@ -86,8 +131,7 @@ test('PRD v3.1 layout: renders responsive structure', async () => {
     lastUpdated: Date.now(),
   };
 
-  global.fetch = async () =>
-    new Response(JSON.stringify(mockStatsData), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  mockUpstreamApis(mockStatsData);
 
   const markup = renderToStaticMarkup(await Home());
 

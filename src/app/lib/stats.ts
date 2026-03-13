@@ -72,6 +72,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function parsePrizeAmount(raw: unknown): number {
+  if (typeof raw === 'number') {
+    return raw;
+  }
+
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (isRecord(parsed) && parsed.amount !== undefined) {
+        return Number(parsed.amount) || 0;
+      }
+    } catch {
+      // Fall through to direct parse.
+    }
+
+    return Number(raw) || 0;
+  }
+
+  return 0;
+}
+
 function readNumber(source: Record<string, unknown>, key: string): number {
   const value = source[key];
 
@@ -496,7 +518,7 @@ function parseExploreData(payload: unknown): {
     status: isRecord(round) && typeof round.status === 'string' && round.status.trim() !== ''
       ? round.status
       : 'Unknown',
-    prize: isRecord(round) ? (readOptionalNumber(round, 'prize') ?? 0) : 0,
+    prize: isRecord(round) ? parsePrizeAmount(round.prize) : 0,
     entries: isRecord(round) ? (readOptionalNumber(round, 'entries') ?? 0) : 0,
     endTime: isRecord(round) ? (readOptionalNumber(round, 'endTime') ?? Date.now()) : Date.now()
   }));
@@ -564,3 +586,5 @@ export async function getStatsData(): Promise<StatsData | null> {
     return null;
   }
 }
+
+export default getStatsData;

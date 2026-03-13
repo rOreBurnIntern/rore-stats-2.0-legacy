@@ -133,6 +133,42 @@ test('falls back to aliases from the upstream prices payload', async () => {
   });
 });
 
+test('parses serialized JSON prize amount from explore rounds data', async () => {
+  Date.now = () => 1_741_525_600_000;
+
+  let requestCount = 0;
+  mockFetch(async () => {
+    requestCount += 1;
+
+    if (requestCount === 1) {
+      return jsonResponse({ weth: 1234.56, rore: 0.8 });
+    }
+
+    return jsonResponse({
+      protocolStats: {
+        motherlode: 12,
+        totalValue: 456.7,
+        participants: 42,
+      },
+      roundsData: [
+        {
+          roundId: 7,
+          status: 'active',
+          prize: '{"amount":"0.00001100","currency":"rORE"}',
+          entries: 77,
+          endTime: 1_741_526_200_000,
+        },
+      ],
+    });
+  });
+
+  const response = await GET();
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.currentRound.prize, 0.000011);
+});
+
 test('returns valid JSON when explore fields are missing', async () => {
   Date.now = () => 1_741_525_600_000;
 
